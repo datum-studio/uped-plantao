@@ -7,7 +7,1328 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
+  --azul:#1B6CA8; --azul-claro:#E<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPED · Sistema de Plantão</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
   --azul:#1B6CA8; --azul-claro:#E8F1FA; --azul-mid:#3D8BCD;
+  --verde:#2E7D57; --cinza:#64748B; --cinza-claro:#F0F4F8;
+  --cinza-borda:#CBD5E1; --vermelho:#E53E3E; --amarelo:#F59E0B; --texto:#1E293B;
+}
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--cinza-claro); color:var(--texto); min-height:100vh; }
+header { background:var(--azul); color:white; padding:14px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+header h1 { font-size:1.1rem; font-weight:700; }
+header p  { font-size:0.76rem; opacity:0.85; }
+.tabs { display:flex; background:white; border-bottom:2px solid var(--cinza-borda); padding:0 16px; gap:2px; overflow-x:auto; }
+.tab-btn { padding:11px 14px; border:none; background:none; font-size:0.82rem; font-weight:600; color:var(--cinza); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all 0.2s; }
+.tab-btn.active { color:var(--azul); border-bottom-color:var(--azul); }
+.tab-panel { display:none; padding:16px; max-width:900px; margin:0 auto; }
+.tab-panel.active { display:block; }
+.loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; z-index:999; flex-direction:column; gap:10px; font-weight:600; color:var(--azul); }
+.spinner { width:36px; height:36px; border:4px solid var(--azul-claro); border-top-color:var(--azul); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; margin-bottom:14px; }
+.card-title { font-size:0.8rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+.form-row { display:flex; gap:12px; flex-wrap:wrap; }
+.form-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:120px; }
+label { font-size:0.76rem; font-weight:600; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; }
+input[type="date"], input[type="text"], input[type="password"], input[type="number"], select, textarea {
+  border:1.5px solid var(--cinza-borda); border-radius:7px; padding:8px 10px; font-size:0.88rem;
+  font-family:inherit; color:var(--texto); background:white; transition:border-color 0.2s; width:100%;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--azul); }
+input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cinza); cursor:not-allowed; }
+.btn-salvar { width:100%; padding:12px; background:var(--azul); color:white; border:none; border-radius:9px; font-size:0.95rem; font-weight:700; cursor:pointer; margin-bottom:6px; }
+.btn-salvar:hover { background:var(--azul-mid); }
+.btn-salvar:disabled { background:var(--cinza); cursor:not-allowed; }
+.msg-edit { font-size:0.82rem; color:var(--amarelo); min-height:20px; font-weight:600; }
+.filtros { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:12px 14px; margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.btn-filtrar { padding:8px 16px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+.btn-limpar { padding:8px 12px; background:none; color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+
+/* CATS GRID */
+.cats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:14px; }
+.cat-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); overflow:hidden; }
+.cat-header { padding:9px 13px; display:flex; align-items:center; gap:7px; background:var(--azul-claro); border-bottom:1px solid var(--cinza-borda); }
+.cat-header span { font-size:0.82rem; font-weight:700; color:var(--azul); }
+.cat-body { padding:10px 12px; display:flex; flex-direction:column; gap:7px; }
+.cat-vazio { font-size:0.78rem; color:var(--cinza); font-style:italic; text-align:center; padding:8px 0; }
+
+/* PROF ROW NO FORM */
+.prof-row { display:flex; gap:5px; align-items:center; }
+.sel-prof { flex:2; font-size:0.83rem !important; padding:6px 8px !important; }
+.sel-turno-prof { flex:1; font-size:0.78rem !important; padding:6px 6px !important; min-width:80px; }
+.inp-obs-prof { flex:1; font-size:0.76rem !important; padding:6px 7px !important; min-width:70px; }
+.btn-rm { border:none; background:none; cursor:pointer; font-size:0.85rem; padding:3px 6px; border-radius:4px; color:var(--cinza); flex-shrink:0; }
+.btn-rm:hover { background:#FEE2E2; color:var(--vermelho); }
+.btn-add-row { font-size:0.76rem; color:var(--azul); background:none; border:1.5px dashed var(--azul-mid); border-radius:6px; padding:5px 8px; cursor:pointer; width:100%; margin-top:2px; }
+.btn-add-row:hover { background:var(--azul-claro); }
+.sem-cadastro { font-size:0.75rem; color:var(--cinza); background:#FEF9C3; border:1px solid #FDE68A; border-radius:6px; padding:7px 10px; text-align:center; }
+
+/* CONSULTA LISTA */
+.lista { display:flex; flex-direction:column; gap:10px; }
+.plantao-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); overflow:hidden; }
+.pc-header { padding:11px 14px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; cursor:pointer; background:var(--cinza-claro); border-bottom:1px solid var(--cinza-borda); user-select:none; }
+.pc-header:hover { background:var(--azul-claro); }
+.pc-data { font-weight:700; font-size:0.92rem; }
+.turno-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; }
+.badge-dia { background:#FEF3C7; color:#92400E; }
+.badge-not { background:#EDE9FE; color:#4C1D95; }
+.pc-resumo { font-size:0.76rem; color:var(--cinza); margin-left:auto; }
+.chevron { color:var(--cinza); font-size:0.75rem; transition:transform 0.2s; }
+.chevron.open { transform:rotate(180deg); }
+.pc-body { padding:12px 14px; display:none; }
+.pc-body.open { display:block; }
+.det-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:9px; margin-bottom:10px; }
+.det-cat { background:var(--cinza-claro); border-radius:8px; padding:9px 11px; }
+.det-cat-titulo { font-size:0.72rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:4px; margin-bottom:5px; }
+.det-prof { font-size:0.83rem; padding:2px 0; display:flex; gap:5px; align-items:baseline; flex-wrap:wrap; }
+.det-turno { font-size:0.68rem; font-weight:700; background:var(--azul); color:white; padding:1px 5px; border-radius:3px; }
+.det-obs { font-size:0.7rem; color:#92400E; font-style:italic; background:#FFFBEB; border-radius:3px; padding:1px 5px; }
+.ausente { color:var(--cinza); font-style:italic; font-size:0.8rem; }
+.obs-bloco { background:#FFFBEB; border-left:3px solid var(--amarelo); border-radius:0 7px 7px 0; padding:8px 11px; font-size:0.82rem; color:#78350F; margin-top:8px; }
+.pc-acoes { display:flex; gap:7px; margin-top:10px; border-top:1px solid var(--cinza-borda); padding-top:9px; flex-wrap:wrap; }
+.btn-edit { padding:6px 13px; background:var(--azul-claro); color:var(--azul); border:1px solid var(--azul-mid); border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; }
+.btn-wa { padding:6px 13px; background:#E8F9EF; color:#128C3E; border:1px solid #A8D5B5; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; }
+.btn-del { padding:6px 13px; background:white; color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; margin-left:auto; }
+.btn-del:hover { background:#FEE2E2; color:var(--vermelho); border-color:#FECACA; }
+.empty { text-align:center; padding:40px 20px; color:var(--cinza); font-size:0.9rem; }
+.empty .big { font-size:2.5rem; margin-bottom:8px; }
+
+/* VIEW TOGGLE */
+.view-toggle { display:flex; gap:8px; margin-bottom:12px; }
+.btn-view { padding:7px 14px; border-radius:7px; border:1.5px solid var(--cinza-borda); background:white; color:var(--cinza); font-weight:600; cursor:pointer; font-size:0.82rem; }
+.btn-view.active { background:var(--azul); color:white; border-color:var(--azul); }
+
+/* TABELA CATEGORIA */
+.tabela-wrap { overflow-x:auto; background:white; border-radius:10px; border:1px solid var(--cinza-borda); }
+.tabela-cat { border-collapse:collapse; font-size:0.81rem; width:100%; }
+.tabela-cat th { background:var(--azul); color:white; padding:8px 10px; text-align:center; font-weight:600; white-space:nowrap; }
+.tabela-cat th.th-nome { text-align:left; background:#0F3D6B; min-width:120px; }
+.tabela-cat th.th-total { background:#0F3D6B; }
+.tabela-cat td { padding:6px 8px; border-bottom:1px solid var(--cinza-borda); text-align:center; }
+.tabela-cat td.td-nome { text-align:left; font-weight:600; white-space:nowrap; }
+.tabela-cat tr:last-child td { border-bottom:none; }
+.tabela-cat tr:hover td { background:var(--azul-claro); }
+.sigla-D { background:#FEF3C7; color:#92400E; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-N { background:#EDE9FE; color:#4C1D95; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-M { background:#DCFCE7; color:#166534; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-T { background:#FEE2E2; color:#991B1B; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.td-total { font-weight:700; color:var(--azul); }
+.cat-secao-titulo { background:var(--cinza-claro); padding:9px 12px; font-size:0.78rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--cinza-borda); }
+
+/* MODAIS */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:900; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.hidden { display:none; }
+.modal-box { background:white; border-radius:12px; padding:24px; max-width:400px; width:100%; }
+.modal-box h3 { font-size:1rem; margin-bottom:8px; }
+.modal-box p { font-size:0.87rem; color:var(--cinza); margin-bottom:16px; line-height:1.5; }
+.modal-box input { margin-bottom:14px; }
+.modal-btns { display:flex; gap:8px; }
+.btn-modal-cancel { flex:1; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; }
+.btn-modal-confirm { flex:1; padding:9px; background:var(--vermelho); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; opacity:0.4; }
+.btn-modal-confirm.ativo { opacity:1; }
+.modal-senha-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:950; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-senha-overlay.hidden { display:none; }
+.modal-senha-box { background:white; border-radius:12px; padding:24px; max-width:360px; width:100%; }
+.modal-senha-box h3 { font-size:1rem; margin-bottom:6px; color:var(--azul); }
+.modal-senha-box p { font-size:0.85rem; color:var(--cinza); margin-bottom:14px; line-height:1.5; }
+.modal-senha-box input { margin-bottom:6px; }
+.modal-senha-btns { display:flex; gap:8px; margin-top:10px; }
+.btn-senha-cancel { flex:1; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; }
+.btn-senha-ok { flex:1; padding:9px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; }
+.senha-erro { font-size:0.8rem; color:var(--vermelho); min-height:18px; }
+
+/* MODAL PROFISSIONAIS */
+.modal-prof-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:960; display:flex; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+.modal-prof-overlay.hidden { display:none; }
+.modal-prof-box { background:white; border-radius:12px; padding:20px; max-width:560px; width:100%; margin:auto; }
+.modal-prof-box h3 { font-size:1rem; color:var(--azul); margin-bottom:4px; }
+.modal-prof-box .sub { font-size:0.8rem; color:var(--cinza); margin-bottom:14px; }
+.add-prof-row { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:6px; }
+.add-prof-row select, .add-prof-row input { flex:1; min-width:130px; }
+.btn-add-prof { padding:8px 14px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.prof-erro { font-size:0.78rem; color:var(--vermelho); min-height:18px; margin-bottom:8px; }
+.prof-secao { margin-bottom:12px; }
+.prof-secao-titulo { font-size:0.72rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px; border-bottom:1px solid var(--cinza-borda); margin-bottom:6px; }
+.prof-item { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #F1F5F9; }
+.prof-item:last-child { border-bottom:none; }
+.prof-item-nome { flex:1; font-size:0.87rem; }
+.prof-item-nome.inativo { opacity:0.4; text-decoration:line-through; }
+.badge-ativo { font-size:0.68rem; padding:2px 7px; border-radius:10px; font-weight:700; background:#DCFCE7; color:#166534; }
+.badge-inativo { font-size:0.68rem; padding:2px 7px; border-radius:10px; font-weight:700; background:#FEE2E2; color:#991B1B; }
+.btn-toggle { font-size:0.72rem; padding:3px 9px; border-radius:5px; border:1px solid var(--cinza-borda); background:white; cursor:pointer; color:var(--cinza); white-space:nowrap; }
+.btn-excluir-p { font-size:0.8rem; padding:3px 6px; border:none; background:none; cursor:pointer; color:var(--cinza); }
+.btn-excluir-p:hover { color:var(--vermelho); }
+.btn-fechar-prof { width:100%; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; margin-top:14px; }
+.btn-gerenciar { padding:7px 13px; background:var(--azul-claro); color:var(--azul); border:1.5px solid var(--azul); border-radius:7px; font-weight:600; cursor:pointer; font-size:0.8rem; white-space:nowrap; }
+.badge-count { display:inline-block; background:var(--azul); color:white; border-radius:10px; font-size:0.68rem; padding:1px 6px; margin-left:5px; }
+
+/* PRODUÇÃO */
+.prod-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+.prod-item { background:white; border:1.5px solid var(--cinza-borda); border-radius:9px; padding:10px 12px; display:flex; flex-direction:column; gap:5px; }
+.prod-item label { font-size:0.72rem; font-weight:700; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; }
+.prod-item input[type="number"] { border:1.5px solid var(--cinza-borda); border-radius:7px; padding:7px 10px; font-size:1.1rem; font-weight:700; color:var(--texto); text-align:center; width:100%; font-family:inherit; }
+.prod-item input[type="number"]:focus { outline:none; border-color:var(--azul); }
+.prod-item input[type="number"]:disabled { background:var(--cinza-claro); color:var(--cinza); cursor:not-allowed; }
+.total-box { background:var(--azul); color:white; border-radius:9px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.total-box .label { font-size:0.85rem; font-weight:600; opacity:0.9; }
+.total-box .valor { font-size:1.6rem; font-weight:700; }
+.prod-bloqueado { background:#FFFBEB; border:1.5px solid #F59E0B; border-radius:9px; padding:11px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#78350F; }
+.btn-editar-prod { padding:6px 14px; background:white; color:#78350F; border:1.5px solid #F59E0B; border-radius:7px; font-size:0.8rem; font-weight:700; cursor:pointer; margin-left:auto; flex-shrink:0; }
+.prod-hist-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); margin-bottom:10px; overflow:hidden; }
+.prod-hist-header { padding:10px 14px; display:flex; align-items:center; gap:9px; cursor:pointer; background:var(--cinza-claro); border-bottom:1px solid var(--cinza-borda); flex-wrap:wrap; }
+.prod-hist-header:hover { background:var(--azul-claro); }
+.prod-hist-body { display:none; padding:12px 14px; }
+.prod-hist-body.open { display:block; }
+.prod-num-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:7px; }
+.prod-num-item { background:var(--cinza-claro); border-radius:7px; padding:7px 10px; display:flex; justify-content:space-between; align-items:center; }
+.prod-num-item .pni-label { font-size:0.75rem; color:var(--cinza); }
+.prod-num-item .pni-val { font-size:0.95rem; font-weight:700; color:var(--texto); }
+.editado-badge { font-size:0.68rem; background:#FEF3C7; color:#92400E; border-radius:4px; padding:1px 6px; }
+.resumo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
+.resumo-card { background:white; border-radius:9px; border:1px solid var(--cinza-borda); padding:12px 14px; }
+.resumo-card .rc-label { font-size:0.72rem; color:var(--cinza); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }
+.resumo-card .rc-val { font-size:1.4rem; font-weight:700; color:var(--azul); }
+.resumo-card .rc-sub { font-size:0.72rem; color:var(--cinza); margin-top:2px; }
+.btn-exportar { padding:8px 16px; background:var(--verde); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+.chart-wrap { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; margin-bottom:14px; }
+.chart-titulo { font-size:0.8rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; }
+
+/* DASHBOARD */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:10px; margin-bottom:14px; }
+.kpi-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:13px 14px; }
+.kpi-label { font-size:0.7rem; font-weight:700; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px; }
+.kpi-valor { font-size:1.7rem; font-weight:700; color:var(--azul); line-height:1; margin-bottom:3px; }
+.kpi-valor.verm { color:var(--vermelho); } .kpi-valor.verd { color:var(--verde); } .kpi-valor.amar { color:#B45309; }
+.kpi-sub { font-size:0.71rem; color:var(--cinza); }
+.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.dash-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; }
+.dash-card.full { grid-column:1/-1; }
+.dash-titulo { font-size:0.78rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; }
+.turno-comp { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.turno-bloco { background:var(--cinza-claro); border-radius:8px; padding:11px 13px; }
+.turno-titulo { font-size:0.75rem; font-weight:700; color:var(--cinza); margin-bottom:8px; }
+.turno-linha { display:flex; justify-content:space-between; font-size:0.8rem; padding:2px 0; }
+.turno-linha .val { font-weight:700; }
+.grav-barra { height:20px; border-radius:6px; overflow:hidden; display:flex; margin:8px 0; }
+.grav-legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
+.grav-item { font-size:0.75rem; color:var(--cinza); display:flex; align-items:center; gap:5px; }
+.grav-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+.dash-vazio { text-align:center; padding:60px 20px; color:var(--cinza); }
+.dash-vazio .big { font-size:3rem; margin-bottom:10px; }
+.dash-filtros { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:12px 14px; margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.comp-total { font-size:0.72rem; background:var(--cinza-claro); border-radius:7px; padding:9px 12px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:8px; }
+.comp-total span { font-weight:700; color:var(--texto); } .comp-total small { color:var(--cinza); }
+
+/* TOAST */
+.toast { position:fixed; bottom:20px; right:20px; background:var(--verde); color:white; padding:11px 18px; border-radius:9px; font-weight:600; font-size:0.88rem; box-shadow:0 4px 16px rgba(0,0,0,0.15); opacity:0; transform:translateY(10px); transition:all 0.3s; z-index:1100; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* P3 */
+.p3-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.p3-slot { background:var(--cinza-claro); border-radius:8px; padding:10px; }
+.p3-slot-label { font-size:0.75rem; font-weight:700; color:var(--cinza); margin-bottom:7px; }
+.p3-slot input, .p3-slot select { margin-bottom:6px; }
+.p3-slot input:last-child, .p3-slot select:last-child { margin-bottom:0; }
+
+@media (max-width:580px) {
+  .cats-grid { grid-template-columns:1fr; }
+  .p3-grid { grid-template-columns:1fr; }
+  .dash-row { grid-template-columns:1fr; }
+  .turno-comp { grid-template-columns:1fr; }
+  .form-row { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div><div>Conectando...</div>
+</div>
+
+<!-- MODAL EXCLUIR PLANTÃO -->
+<div class="modal-overlay hidden" id="modal-excluir">
+  <div class="modal-box">
+    <h3 style="color:var(--vermelho)">🗑️ Excluir plantão</h3>
+    <p>Esta ação não pode ser desfeita. Digite <strong>EXCLUIR</strong> para confirmar:</p>
+    <input type="text" id="modal-input" placeholder="Digite EXCLUIR">
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-modal-confirm" id="btn-modal-confirm" onclick="confirmarExclusao()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SENHA SUPERVISOR -->
+<div class="modal-senha-overlay hidden" id="modal-senha-gen">
+  <div class="modal-senha-box">
+    <h3 id="modal-senha-titulo">🔐 Área restrita</h3>
+    <p id="modal-senha-desc">Informe a senha de supervisor para continuar.</p>
+    <input type="password" id="modal-senha-input" placeholder="Senha de supervisor">
+    <div class="senha-erro" id="modal-senha-erro"></div>
+    <div class="modal-senha-btns">
+      <button class="btn-senha-cancel" onclick="fecharModalSenha()">Cancelar</button>
+      <button class="btn-senha-ok" onclick="confirmarModalSenha()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GERENCIAR PROFISSIONAIS -->
+<div class="modal-prof-overlay hidden" id="modal-prof">
+  <div class="modal-prof-box">
+    <h3>👥 Gerenciar Profissionais</h3>
+    <p class="sub">Profissionais cadastrados aqui aparecem nos selects do formulário de registro.</p>
+    <div class="add-prof-row">
+      <select id="new-prof-cat"></select>
+      <input type="text" id="new-prof-nome" placeholder="Nome completo">
+      <button class="btn-add-prof" onclick="adicionarProfissional()">+ Adicionar</button>
+    </div>
+    <div class="prof-erro" id="prof-erro"></div>
+    <div id="lista-profs"></div>
+    <button class="btn-fechar-prof" onclick="document.getElementById('modal-prof').classList.add('hidden')">Fechar</button>
+  </div>
+</div>
+
+<header>
+  <div style="font-size:26px">🏥</div>
+  <div>
+    <h1>UPED · Sistema de Plantão</h1>
+    <p>Unidade de Atendimento Pediátrico · Gestão em tempo real</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active"  onclick="switchTab('registrar')">✏️ Registrar Plantão</button>
+  <button class="tab-btn" id="tab-consultar" onclick="switchTab('consultar')">📋 Consultar Plantões</button>
+  <button class="tab-btn" onclick="switchTab('producao')">📊 Registro de Produção</button>
+  <button class="tab-btn" onclick="switchTab('dashboard')">📈 Dashboard</button>
+  <button class="tab-btn" onclick="switchTab('equipe')">👥 Equipe</button>
+</div>
+
+<!-- ===== REGISTRAR ===== -->
+<div class="tab-panel active" id="panel-registrar">
+  <div class="card">
+    <div class="card-title" style="display:block;">📅 Dados do Plantão</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" id="f-data">
+      </div>
+      <div class="form-group">
+        <label>Turno do Plantão</label>
+        <select id="f-turno">
+          <option value="DIURNO">☀️ Diurno</option>
+          <option value="NOTURNO" selected>🌙 Noturno</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0;min-width:auto;justify-content:flex-end;">
+        <label>&nbsp;</label>
+        <button onclick="novoRegistro()" style="padding:8px 14px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:7px;font-weight:600;cursor:pointer;font-size:0.85rem;">🔄 Limpar</button>
+      </div>
+    </div>
+  </div>
+  <div class="cats-grid" id="form-cats"></div>
+  <div class="cat-card" style="margin-bottom:14px;">
+    <div class="cat-header"><span>👨‍⚕️</span><span>Plantonista P3</span></div>
+    <div class="cat-body">
+      <div class="p3-grid">
+        <div class="p3-slot">
+          <div class="p3-slot-label">🌅 Manhã (11h–17h)</div>
+          <select id="p3m-nome"><option value="">— Selecionar P3 —</option></select>
+          <input type="text" id="p3m-obs" placeholder="Observação">
+        </div>
+        <div class="p3-slot">
+          <div class="p3-slot-label">🌆 Tarde (17h–23h)</div>
+          <select id="p3t-nome"><option value="">— Selecionar P3 —</option></select>
+          <input type="text" id="p3t-obs" placeholder="Observação">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title" style="display:block;">📝 Observações gerais do plantão</div>
+    <textarea id="f-obs" placeholder="Ex: profissional chegando às 21h, substituição..." style="width:100%;min-height:65px;resize:vertical;border:1.5px solid var(--cinza-borda);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:0.87rem;"></textarea>
+  </div>
+  <button class="btn-salvar" id="btn-salvar" onclick="salvar()">💾 Salvar Escala do Plantão</button>
+  <div class="msg-edit" id="msg-edit"></div>
+</div>
+
+<!-- ===== CONSULTAR ===== -->
+<div class="tab-panel" id="panel-consultar">
+  <div class="filtros">
+    <div class="form-group"><label>Data início</label><input type="date" id="fi-ini"></div>
+    <div class="form-group"><label>Data fim</label><input type="date" id="fi-fim"></div>
+    <div class="form-group">
+      <label>Turno</label>
+      <select id="fi-turno">
+        <option value="">Todos</option>
+        <option value="DIURNO">☀️ Diurno</option>
+        <option value="NOTURNO">🌙 Noturno</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Profissional</label><input type="text" id="fi-nome" placeholder="Nome..."></div>
+    <button class="btn-filtrar" onclick="filtrar()">🔍 Buscar</button>
+    <button class="btn-limpar" onclick="limparFiltros()">✕ Limpar</button>
+  </div>
+  <div class="view-toggle">
+    <button class="btn-view active" id="btn-view-lista" onclick="setView('lista')">📋 Por plantão</button>
+    <button class="btn-view" id="btn-view-cat" onclick="setView('categoria')">👥 Por categoria</button>
+  </div>
+  <div id="view-lista"><div id="lista" class="lista"></div></div>
+  <div id="view-categoria" style="display:none;">
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <div class="form-group" style="min-width:180px;max-width:240px;">
+        <label>Categoria</label>
+        <select id="fi-cat" onchange="renderTabelaCat()">
+          <option value="">Todas as categorias</option>
+        </select>
+      </div>
+      <button class="btn-exportar" onclick="exportarCatCSV()">⬇️ Exportar CSV</button>
+    </div>
+    <div id="tabela-cat-wrap"></div>
+  </div>
+</div>
+
+<!-- ===== PRODUÇÃO ===== -->
+<div class="tab-panel" id="panel-producao">
+  <div class="card" id="card-prod">
+    <div class="card-title" style="display:block;">📊 Fechamento de Produção do Plantão</div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group"><label>Data</label><input type="date" id="fp-data"></div>
+      <div class="form-group">
+        <label>Turno</label>
+        <select id="fp-turno">
+          <option value="DIURNO">☀️ Diurno</option>
+          <option value="NOTURNO" selected>🌙 Noturno</option>
+        </select>
+      </div>
+    </div>
+    <div id="prod-aviso" class="prod-bloqueado" style="display:none;">
+      <span>🔒</span><span id="prod-aviso-txt"></span>
+      <button class="btn-editar-prod" onclick="editarProducao()">✏️ Editar</button>
+    </div>
+    <div class="prod-grid" id="prod-campos">
+      <div class="prod-item"><label>🔵 Ficha Azul</label><input type="number" id="p-azul" min="0" value="0"></div>
+      <div class="prod-item"><label>🟢 Ficha Verde</label><input type="number" id="p-verde" min="0" value="0"></div>
+      <div class="prod-item"><label>🟡 Ficha Amarela</label><input type="number" id="p-amarela" min="0" value="0"></div>
+      <div class="prod-item"><label>🔴 Ficha Vermelha</label><input type="number" id="p-vermelha" min="0" value="0"></div>
+      <div class="prod-item"><label>🟠 Ficha Laranja</label><input type="number" id="p-laranja" min="0" value="0"></div>
+    </div>
+    <div class="total-box" style="margin-bottom:10px;">
+      <span class="label">Total de Atendimentos</span>
+      <span class="valor" id="p-total">0</span>
+    </div>
+    <div style="font-size:0.75rem;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Informações complementares</div>
+    <div class="prod-grid" id="prod-campos-comp">
+      <div class="prod-item"><label>🤧 Sint. Gripais</label><input type="number" id="p-gripais" min="0" value="0"></div>
+      <div class="prod-item"><label>🪡 Sutura</label><input type="number" id="p-sutura" min="0" value="0"></div>
+      <div class="prod-item"><label>🛏️ Internamento</label><input type="number" id="p-internamento" min="0" value="0"></div>
+      <div class="prod-item"><label>✅ Alta</label><input type="number" id="p-alta" min="0" value="0"></div>
+      <div class="prod-item"><label>🚪 Evasão</label><input type="number" id="p-evasao" min="0" value="0"></div>
+      <div class="prod-item"><label>🚑 Transferência</label><input type="number" id="p-transferencia" min="0" value="0"></div>
+      <div class="prod-item"><label>⚫ Óbito</label><input type="number" id="p-obito" min="0" value="0"></div>
+    </div>
+    <button class="btn-salvar" id="btn-salvar-prod" onclick="salvarProducao()">💾 Registrar Produção</button>
+  </div>
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>📈 Histórico</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rp-ini"></div>
+        <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rp-fim"></div>
+        <div class="form-group" style="min-width:100px;"><label>Turno</label>
+          <select id="rp-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
+        </div>
+        <button class="btn-filtrar" onclick="filtrarProducao()" style="margin-bottom:0">🔍</button>
+        <button class="btn-limpar" onclick="limparProd()" style="margin-bottom:0">✕</button>
+        <button class="btn-exportar" onclick="exportarProdCSV()">⬇️ CSV</button>
+      </div>
+    </div>
+    <div class="resumo-grid" id="resumo-prod"></div>
+    <div class="chart-wrap" id="chart-wrap-prod" style="display:none;">
+      <div class="chart-titulo">Atendimentos por plantão</div>
+      <div style="position:relative;width:100%;height:200px;"><canvas id="chart-prod"></canvas></div>
+    </div>
+    <div id="lista-prod"></div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="tab-panel" id="panel-dashboard">
+  <div class="dash-filtros">
+    <div class="form-group" style="min-width:120px;"><label>De</label><input type="date" id="db-ini"></div>
+    <div class="form-group" style="min-width:120px;"><label>Até</label><input type="date" id="db-fim"></div>
+    <div class="form-group" style="min-width:110px;">
+      <label>Turno</label>
+      <select id="db-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
+    </div>
+    <button class="btn-filtrar" onclick="renderDashboard()">🔍 Aplicar</button>
+    <button class="btn-limpar" onclick="limparDashboard()">✕</button>
+  </div>
+  <div id="dash-conteudo"><div class="dash-vazio"><div class="big">📈</div><div>Carregando...</div></div></div>
+</div>
+
+<!-- ===== EQUIPE ===== -->
+<div class="tab-panel" id="panel-equipe">
+  <div class="card">
+    <div class="card-title" style="display:block;">👥 Gerenciar Profissionais</div>
+    <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais cadastrados em <strong>Médicos Plantonistas</strong>.</p>
+    <div class="add-prof-row">
+      <select id="new-prof-cat"></select>
+      <input type="text" id="new-prof-nome" placeholder="Nome completo do profissional">
+      <button class="btn-add-prof" onclick="adicionarProfissional()">+ Adicionar</button>
+    </div>
+    <div class="prof-erro" id="prof-erro"></div>
+  </div>
+  <div id="lista-profs-equipe"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="background:#0F3D6B;color:rgba(255,255,255,0.85);padding:16px 24px;font-family:'Segoe UI',system-ui,sans-serif;margin-top:8px;">
+  <div style="font-size:0.8rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:white;margin-bottom:4px;">Lopes · Análise e Gestão de Dados</div>
+  <div style="font-size:0.75rem;opacity:0.75;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span>Desenvolvido por Débora Lopes</span>
+    <span style="opacity:0.4;">|</span>
+    <span>(74) 98838-2952</span>
+    <span style="opacity:0.4;">|</span>
+    <span>UPED · Sistema de Plantão © <span id="footer-ano">2026</span></span>
+  </div>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
+  authDomain:"uped-plantao.firebaseapp.com",
+  projectId:"uped-plantao",
+  storageBucket:"uped-plantao.firebasestorage.app",
+  messagingSenderId:"875342869066",
+  appId:"1:875342869066:web:db1b3f71c3ae87330eecb3"
+});
+const db = getFirestore(app);
+
+// ===== CONSTANTES =====
+const SENHA = 'uped2026';
+const TURNOS_PROF = [
+  { v:'DIURNO', l:'☀️ Diurno' },
+  { v:'NOTURNO', l:'🌙 Noturno' },
+  { v:'MANHA', l:'🌅 Manhã' },
+  { v:'TARDE', l:'🌆 Tarde' }
+];
+const SIGLAS = { DIURNO:'D', NOTURNO:'N', MANHA:'M', TARDE:'T' };
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const CATS = [
+  { id:'recepcao',   icon:'👩‍💻', label:'Recepção' },
+  { id:'portaria',   icon:'🫸🏻', label:'Ag. de Portaria' },
+  { id:'maqueiro',   icon:'🧑‍🦽', label:'Maqueiro' },
+  { id:'motorista',  icon:'🚑',  label:'Motorista' },
+  { id:'cozinheira', icon:'👩🏻‍🍳', label:'Cozinheira' },
+  { id:'asg',        icon:'🚮',  label:'ASG' },
+  { id:'copa',       icon:'🛎️',  label:'Copa' },
+  { id:'farmacia',   icon:'💊',  label:'Farmácia' },
+  { id:'social',     icon:'👩‍🏫', label:'Serviço Social' },
+  { id:'tec_enf',    icon:'👩🏻‍⚕️', label:'Téc. Enfermagem' },
+  { id:'enfermeiro', icon:'🩺',  label:'Enfermeiros(as)' },
+  { id:'medico',     icon:'👨‍⚕️', label:'Médicos Plantonistas' },
+  { id:'evolucao',   icon:'📋',  label:'Evolução' },
+  { id:'fisio',      icon:'🦺',  label:'Fisioterapeuta' },
+  { id:'p3',         icon:'👨‍⚕️', label:'Plantonista P3' },
+];
+// Categorias que usam profissionais de outra catId para o select
+const CAT_FONTE = { evolucao:'medico', p3:'medico' };
+// Categorias que aparecem no cadastro de profissionais (sem evolucao e p3)
+const CATS_CADASTRO = CATS.filter(c=>!CAT_FONTE[c.id]);
+const CAMPOS_FICHAS = ['azul','verde','amarela','vermelha','laranja'];
+const CAMPOS_COMP   = ['gripais','sutura','internamento','alta','evasao','transferencia','obito'];
+const CAMPOS_PROD   = [...CAMPOS_FICHAS,...CAMPOS_COMP];
+const LABELS_PROD   = {
+  azul:'🔵 Ficha Azul',verde:'🟢 Ficha Verde',amarela:'🟡 Ficha Amarela',
+  vermelha:'🔴 Ficha Vermelha',laranja:'🟠 Ficha Laranja',gripais:'🤧 Sint. Gripais',
+  sutura:'🪡 Sutura',internamento:'🛏️ Internamento',alta:'✅ Alta',
+  evasao:'🚪 Evasão',transferencia:'🚑 Transferência',obito:'⚫ Óbito'
+};
+
+// ===== STATE =====
+let profissionais = [];   // { id, catId, nome, ativo }
+let plantoes      = [];   // docs de plantoes
+let producoes     = [];   // docs de producao
+let estado        = {};   // { catId: [{nome,turno,obs}] }
+let editKey       = null;
+let keyExcluir    = null;
+let senhaCallback = null;
+let prodBloqueado = false;
+let chartProd     = null;
+let chartEv       = null;
+let chartFichas   = null;
+
+// ===== UTILS =====
+function abr(nome) {
+  if (!nome) return '';
+  const p = nome.trim().split(/\s+/);
+  return p.length <= 2 ? nome : p[0] + ' ' + p[p.length-1];
+}
+function fmtData(iso) { const [a,m,d]=iso.split('-'); return `${d}/${m}/${a}`; }
+function fmtDataCurta(iso) { const [,m,d]=iso.split('-'); return `${d}/${m}`; }
+function toast(msg, bg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=bg||'var(--verde)';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ===== MODAL SENHA GENÉRICO =====
+window.abrirSenha = function(titulo, desc, cb) {
+  senhaCallback = cb;
+  document.getElementById('modal-senha-titulo').textContent = titulo;
+  document.getElementById('modal-senha-desc').textContent   = desc;
+  document.getElementById('modal-senha-input').value = '';
+  document.getElementById('modal-senha-erro').textContent   = '';
+  document.getElementById('modal-senha-gen').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('modal-senha-input').focus(),100);
+};
+window.fecharModalSenha = ()=>document.getElementById('modal-senha-gen').classList.add('hidden');
+window.confirmarModalSenha = function() {
+  if (document.getElementById('modal-senha-input').value !== SENHA) {
+    document.getElementById('modal-senha-erro').textContent='❌ Senha incorreta.'; return;
+  }
+  fecharModalSenha();
+  if (senhaCallback) { senhaCallback(); senhaCallback=null; }
+};
+document.getElementById('modal-senha-input').addEventListener('keydown',e=>{if(e.key==='Enter')confirmarModalSenha();});
+
+// ===== PROFISSIONAIS =====
+onSnapshot(collection(db,'profissionais'), snap=>{
+  profissionais = snap.docs.map(d=>({...d.data(),id:d.id}))
+    .sort((a,b)=> a.catId.localeCompare(b.catId) || a.nome.localeCompare(b.nome));
+  rebuildarForm();
+  atualizarSelectsP3();
+  const mp=document.getElementById('modal-prof');
+  if(!mp.classList.contains('hidden')) renderListaProfs();
+});
+
+function profsAtivos(catId) {
+  const fonte = CAT_FONTE[catId] || catId;
+  return profissionais.filter(p=>p.catId===fonte && p.ativo!==false);
+}
+
+window.abrirGerenciarProfs = ()=>{ switchTab('equipe'); };
+
+function renderListaProfs() {
+  // Renderiza tanto no modal (legado) quanto na aba equipe
+  ['lista-profs','lista-profs-equipe'].forEach(elId=>{
+    const el=document.getElementById(elId); if(!el) return;
+    const comProfs=CATS_CADASTRO.filter(c=>profissionais.some(p=>p.catId===c.id));
+    if(comProfs.length===0){ el.innerHTML='<div class="card"><p style="font-size:0.83rem;color:var(--cinza);text-align:center;padding:16px;">Nenhum profissional cadastrado ainda.</p></div>'; return; }
+    el.innerHTML=comProfs.map(cat=>{
+      const pp=profissionais.filter(p=>p.catId===cat.id);
+      const usadoPor=CATS.filter(c=>CAT_FONTE[c.id]===cat.id).map(c=>c.label);
+      return `<div class="card" style="margin-bottom:10px;">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>${cat.icon} ${cat.label}</span>
+          ${usadoPor.length?`<span style="font-size:0.72rem;font-weight:400;color:var(--cinza);">também usado em: ${usadoPor.join(', ')}</span>`:''}
+        </div>
+        ${pp.map(p=>{
+          const ativo=p.ativo!==false;
+          return `<div class="prof-item">
+            <span class="prof-item-nome${ativo?'':' inativo'}">${p.nome}</span>
+            <span class="${ativo?'badge-ativo':'badge-inativo'}">${ativo?'Ativo':'Inativo'}</span>
+            <button class="btn-toggle" onclick="toggleProf('${p.id}',${ativo})">${ativo?'⏸ Desativar':'▶ Reativar'}</button>
+            <button class="btn-excluir-p" onclick="excluirProf('${p.id}','${p.nome.replace(/'/g,"\\'")}')">🗑️</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  });
+  // Popula select de categorias
+  ['new-prof-cat'].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    sel.innerHTML=CATS_CADASTRO.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+  });
+}
+
+window.adicionarProfissional = async function() {
+  const catId = document.getElementById('new-prof-cat').value;
+  const nome  = document.getElementById('new-prof-nome').value.trim();
+  const erroEl= document.getElementById('prof-erro');
+  if(!nome){ erroEl.textContent='Informe o nome.'; return; }
+  const dup = profissionais.find(p=>p.catId===catId && p.nome.toLowerCase()===nome.toLowerCase());
+  if(dup){ erroEl.textContent='Já existe nesta categoria.'; return; }
+  erroEl.textContent='';
+  const id = catId+'_'+Date.now();
+  await setDoc(doc(db,'profissionais',id),{catId,nome,ativo:true});
+  document.getElementById('new-prof-nome').value='';
+  toast('✅ Profissional adicionado!');
+};
+window.toggleProf = async(id,estaAtivo)=>{
+  await setDoc(doc(db,'profissionais',id),{ativo:!estaAtivo},{merge:true});
+  toast(estaAtivo?'⏸ Desativado.':'▶ Reativado.');
+};
+window.excluirProf = async(id,nome)=>{
+  if(!confirm(`Excluir "${nome}"?`)) return;
+  await deleteDoc(doc(db,'profissionais',id));
+  toast('🗑️ Removido.');
+};
+
+// ===== FORMULÁRIO REGISTRO =====
+function turnoPlantao() { return document.getElementById('f-turno')?.value || 'NOTURNO'; }
+
+function turnosProfDisponiveis() {
+  // Manhã e Tarde só disponíveis no plantão Diurno
+  if (turnoPlantao() === 'DIURNO') return TURNOS_PROF;
+  return TURNOS_PROF.filter(t => t.v === 'NOTURNO');
+}
+
+function initEstado() {
+  estado={};
+  const t = turnoPlantao();
+  CATS.filter(c=>c.id!=='p3').forEach(c=>{ estado[c.id]=[{nome:'',turno:t,obs:''}]; });
+}
+
+function rebuildarForm() {
+  const grid=document.getElementById('form-cats'); if(!grid) return;
+  // Salva seleções atuais
+  const estadoAtual={};
+  CATS.filter(c=>c.id!=='p3').forEach(c=>{ estadoAtual[c.id]=estado[c.id]||[{nome:'',turno:'DIURNO',obs:''}]; });
+  estado=estadoAtual;
+  grid.innerHTML='';
+  CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+    const card=document.createElement('div'); card.className='cat-card';
+    card.innerHTML=`<div class="cat-header"><span>${cat.icon}</span><span>${cat.label}</span></div><div class="cat-body" id="cb-${cat.id}"></div>`;
+    grid.appendChild(card);
+    renderCatBody(cat.id);
+  });
+  atualizarSelectsP3();
+}
+
+function renderCatBody(catId) {
+  const body=document.getElementById('cb-'+catId); if(!body) return;
+  body.innerHTML='';
+  const ativos=profsAtivos(catId);
+  if(ativos.length===0){
+    body.innerHTML=`<div class="sem-cadastro">⚠️ Nenhum profissional cadastrado nesta categoria.<br><small>Use "Gerenciar Profissionais" para adicionar.</small></div>`;
+    return;
+  }
+  (estado[catId]||[{nome:'',turno:turnoPlantao(),obs:''}]).forEach((slot,i)=>{
+    const row=document.createElement('div'); row.className='prof-row';
+    // Select nome
+    const selNome=document.createElement('select'); selNome.className='sel-prof';
+    selNome.innerHTML=`<option value="">— Selecionar —</option>`+
+      ativos.map(p=>`<option value="${p.nome}" ${slot.nome===p.nome?'selected':''}>${abr(p.nome)}</option>`).join('');
+    selNome.title = slot.nome||'';
+    selNome.addEventListener('change',e=>{ estado[catId][i].nome=e.target.value; selNome.title=e.target.value; });
+    // Select turno — Manhã e Tarde disponíveis apenas no Diurno
+    // Se slot já tem turno salvo, sempre mostra todas as opções para permitir edição livre
+    const disponiveis = slot.nome ? TURNOS_PROF : turnosProfDisponiveis();
+    const selTurno=document.createElement('select'); selTurno.className='sel-turno-prof';
+    selTurno.innerHTML=disponiveis.map(t=>`<option value="${t.v}" ${slot.turno===t.v?'selected':''}>${t.l}</option>`).join('');
+    selTurno.addEventListener('change',e=>{ estado[catId][i].turno=e.target.value; });
+    // Input obs
+    const inObs=document.createElement('input'); inObs.type='text'; inObs.className='inp-obs-prof';
+    inObs.placeholder='Obs.'; inObs.value=slot.obs||'';
+    inObs.addEventListener('input',e=>{ estado[catId][i].obs=e.target.value; });
+    row.appendChild(selNome); row.appendChild(selTurno); row.appendChild(inObs);
+    if(i>0){
+      const btnRm=document.createElement('button'); btnRm.className='btn-rm'; btnRm.textContent='✕';
+      btnRm.addEventListener('click',()=>{ estado[catId].splice(i,1); renderCatBody(catId); });
+      row.appendChild(btnRm);
+    }
+    body.appendChild(row);
+  });
+  const btnAdd=document.createElement('button'); btnAdd.className='btn-add-row'; btnAdd.textContent='+ Adicionar';
+  btnAdd.addEventListener('click',()=>{ estado[catId].push({nome:'',turno:turnoPlantao(),obs:''}); renderCatBody(catId); });
+  body.appendChild(btnAdd);
+}
+
+function atualizarSelectsP3() {
+  const p3ativos=profsAtivos('p3');
+  ['p3m-nome','p3t-nome'].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML=`<option value="">— Selecionar P3 —</option>`+
+      p3ativos.map(p=>`<option value="${p.nome}" ${cur===p.nome?'selected':''}>${abr(p.nome)}</option>`).join('');
+  });
+}
+
+function novoRegistro() {
+  editKey=null;
+  document.getElementById('f-data').valueAsDate=new Date();
+  document.getElementById('f-turno').value='NOTURNO';
+  document.getElementById('f-obs').value='';
+  document.getElementById('p3m-nome').value='';
+  document.getElementById('p3m-obs').value='';
+  document.getElementById('p3t-nome').value='';
+  document.getElementById('p3t-obs').value='';
+  document.getElementById('msg-edit').textContent='';
+  document.getElementById('btn-salvar').textContent='💾 Salvar Escala do Plantão';
+  initEstado(); rebuildarForm();
+}
+window.novoRegistro=novoRegistro;
+
+// Ao mudar data ou turno: carrega registro existente do Firebase ou limpa o form
+async function carregarPlantao() {
+  const data  = document.getElementById('f-data').value;
+  const turno = document.getElementById('f-turno').value;
+  if (!data || !turno) return;
+  const chave = data + '_' + turno;
+  const snap  = await getDoc(doc(db, 'plantoes', chave));
+  if (snap.exists()) {
+    // Carrega registro existente
+    const r = snap.data();
+    editKey = chave;
+    document.getElementById('f-obs').value       = r.obs || '';
+    document.getElementById('p3m-nome').value    = r.equipe?.p3?.manha?.nome || '';
+    document.getElementById('p3m-obs').value     = r.equipe?.p3?.manha?.obs  || '';
+    document.getElementById('p3t-nome').value    = r.equipe?.p3?.tarde?.nome || '';
+    document.getElementById('p3t-obs').value     = r.equipe?.p3?.tarde?.obs  || '';
+    initEstado();
+    CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+      const pp = r.equipe?.[cat.id];
+      if (pp && pp.length > 0) estado[cat.id] = pp.map(p=>({nome:p.nome||'',turno:p.turno||turno,obs:p.obs||''}));
+    });
+    document.getElementById('msg-edit').textContent = `✏️ Editando: ${fmtData(data)} — ${turno}`;
+    document.getElementById('btn-salvar').textContent = '💾 Salvar Alterações';
+  } else {
+    // Registro novo — limpa tudo
+    editKey = null;
+    document.getElementById('f-obs').value    = '';
+    document.getElementById('p3m-nome').value = '';
+    document.getElementById('p3m-obs').value  = '';
+    document.getElementById('p3t-nome').value = '';
+    document.getElementById('p3t-obs').value  = '';
+    document.getElementById('msg-edit').textContent = '';
+    document.getElementById('btn-salvar').textContent = '💾 Salvar Escala do Plantão';
+    initEstado();
+  }
+  rebuildarForm();
+}
+
+document.getElementById('f-data').addEventListener('change',  carregarPlantao);
+document.getElementById('f-turno').addEventListener('change', carregarPlantao);
+
+async function salvar() {
+  const data =document.getElementById('f-data').value;
+  const turno=document.getElementById('f-turno').value;
+  const obs  =document.getElementById('f-obs').value.trim();
+  if(!data){ toast('⚠️ Selecione a data!','#E53E3E'); return; }
+  const equipe={};
+  CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+    equipe[cat.id]=(estado[cat.id]||[]).filter(p=>p.nome.trim()!=='');
+  });
+  equipe.p3={
+    manha:{ nome:document.getElementById('p3m-nome').value, obs:document.getElementById('p3m-obs').value },
+    tarde:{ nome:document.getElementById('p3t-nome').value, obs:document.getElementById('p3t-obs').value }
+  };
+  const key=editKey||(data+'_'+turno);
+  const reg={ key, data, turno, obs, equipe, atualizadoEm:new Date().toISOString() };
+  const btn=document.getElementById('btn-salvar');
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    await setDoc(doc(db,'plantoes',key),reg);
+    toast('✅ Escala salva!'); novoRegistro();
+  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Salvar Escala do Plantão'; }
+}
+window.salvar=salvar;
+
+// ===== LISTENER PLANTÕES =====
+onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
+  plantoes=snap.docs.map(d=>d.data());
+  const panel=document.getElementById('panel-consultar');
+  if(panel.classList.contains('active')){
+    if(document.getElementById('view-categoria').style.display==='none') renderLista(plantoesFiltrados());
+    else renderTabelaCat();
+  }
+  atualizarBadge();
+  document.getElementById('loading').style.display='none';
+},err=>{
+  document.getElementById('loading').style.display='none';
+  toast('⚠️ Erro: '+err.message,'#E53E3E');
+});
+
+function atualizarBadge() {
+  const tab=document.getElementById('tab-consultar');
+  let b=tab.querySelector('.badge-count');
+  if(!b){ b=document.createElement('span'); b.className='badge-count'; tab.appendChild(b); }
+  b.textContent=plantoes.length;
+}
+
+// ===== CONSULTA PLANTÕES =====
+function plantoesFiltrados() {
+  const ini =document.getElementById('fi-ini').value;
+  const fim =document.getElementById('fi-fim').value;
+  const trn =document.getElementById('fi-turno').value;
+  const nome=document.getElementById('fi-nome').value.trim().toLowerCase();
+  return plantoes.filter(r=>{
+    if(ini && r.data<ini) return false;
+    if(fim && r.data>fim) return false;
+    if(trn && r.turno!==trn) return false;
+    if(nome){
+      const todos=CATS.map(c=>c.id==='p3'
+        ? [(r.equipe.p3?.manha?.nome||''),(r.equipe.p3?.tarde?.nome||'')].join(' ')
+        : (r.equipe[c.id]||[]).map(p=>p.nome).join(' ')
+      ).join(' ');
+      if(!todos.toLowerCase().includes(nome)) return false;
+    }
+    return true;
+  });
+}
+
+function filtrar(){ renderLista(plantoesFiltrados()); }
+window.filtrar=filtrar;
+function limparFiltros(){
+  ['fi-ini','fi-fim','fi-nome'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fi-turno').value='';
+  renderLista(plantoes);
+}
+window.limparFiltros=limparFiltros;
+
+function renderLista(lista) {
+  const el=document.getElementById('lista');
+  if(lista.length===0){ el.innerHTML='<div class="empty"><div class="big">📋</div><div>Nenhum plantão encontrado.</div></div>'; return; }
+  el.innerHTML='';
+  lista.forEach(r=>{
+    const med=(r.equipe.medico||[]).map(p=>abr(p.nome)).filter(Boolean).slice(0,2).join(' · ')||'—';
+    const div=document.createElement('div'); div.className='plantao-card';
+    div.innerHTML=`
+      <div class="pc-header" onclick="toggleCard(this)">
+        <span class="pc-data">${fmtData(r.data)}</span>
+        <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'☀️':'🌙'} ${r.turno}</span>
+        <span class="pc-resumo">🩺 ${med}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="pc-body">
+        <div class="det-grid">${renderDetalhe(r)}</div>
+        ${r.obs?`<div class="obs-bloco">📝 ${r.obs}</div>`:''}
+        <div class="pc-acoes">
+          <button class="btn-edit" onclick="editarPlantao('${r.key}')">✏️ Editar</button>
+          <button class="btn-wa" onclick="compartilharWA('${r.key}')">📲 WhatsApp</button>
+          <button class="btn-del" onclick="abrirExcluir('${r.key}')">🗑️ Excluir</button>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderDetalhe(r) {
+  let html='';
+  CATS.forEach(cat=>{
+    let conteudo;
+    if(cat.id==='p3'){
+      const p3=r.equipe?.p3;
+      const mn=p3?.manha?.nome; const tn=p3?.tarde?.nome;
+      if(!mn && !tn){ conteudo='<div class="ausente">—</div>'; }
+      else { conteudo=`${mn?`<div class="det-prof">🌅 ${abr(mn)}${p3.manha.obs?` <span class="det-obs">${p3.manha.obs}</span>`:''}</div>`:''}
+        ${tn?`<div class="det-prof">🌆 ${abr(tn)}${p3.tarde.obs?` <span class="det-obs">${p3.tarde.obs}</span>`:''}</div>`:'`'}`; }
+    } else {
+      const pp=r.equipe?.[cat.id]||[];
+      conteudo=pp.length===0?'<div class="ausente">—</div>':pp.map(p=>`<div class="det-prof">${abr(p.nome)} <span class="det-turno">${SIGLAS[p.turno]||p.turno}</span>${p.obs?` <span class="det-obs">${p.obs}</span>`:''}</div>`).join('');
+    }
+    html+=`<div class="det-cat"><div class="det-cat-titulo">${cat.icon} ${cat.label}</div>${conteudo}</div>`;
+  });
+  return html;
+}
+
+window.toggleCard=function(h){ const b=h.nextElementSibling; const c=h.querySelector('.chevron'); b.classList.toggle('open'); c.classList.toggle('open',b.classList.contains('open')); };
+
+window.editarPlantao=function(key){
+  const r=plantoes.find(x=>x.key===key); if(!r) return;
+  editKey=key;
+  document.getElementById('f-data').value=r.data;
+  document.getElementById('f-turno').value=r.turno;
+  document.getElementById('f-obs').value=r.obs||'';
+  document.getElementById('p3m-nome').value=r.equipe?.p3?.manha?.nome||'';
+  document.getElementById('p3m-obs').value=r.equipe?.p3?.manha?.obs||'';
+  document.getElementById('p3t-nome').value=r.equipe?.p3?.tarde?.nome||'';
+  document.getElementById('p3t-obs').value=r.equipe?.p3?.tarde?.obs||'';
+  initEstado();
+  CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+    const pp=r.equipe?.[cat.id];
+    if(pp && pp.length>0) estado[cat.id]=pp.map(p=>({nome:p.nome||'',turno:p.turno||'DIURNO',obs:p.obs||''}));
+  });
+  rebuildarForm();
+  document.getElementById('msg-edit').textContent='✏️ Editando: '+fmtData(r.data)+' — '+r.turno;
+  document.getElementById('btn-salvar').textContent='💾 Salvar Alterações';
+  switchTab('registrar');
+};
+
+// EXCLUIR
+window.abrirExcluir=function(key){
+  keyExcluir=key;
+  document.getElementById('modal-input').value='';
+  document.getElementById('btn-modal-confirm').classList.remove('ativo');
+  document.getElementById('modal-excluir').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('modal-input').focus(),100);
+};
+document.getElementById('modal-input').addEventListener('input',e=>{
+  document.getElementById('btn-modal-confirm').classList.toggle('ativo',e.target.value.trim().toUpperCase()==='EXCLUIR');
+});
+window.fecharModal=()=>{ document.getElementById('modal-excluir').classList.add('hidden'); keyExcluir=null; };
+window.confirmarExclusao=async function(){
+  if(document.getElementById('modal-input').value.trim().toUpperCase()!=='EXCLUIR') return;
+  if(!keyExcluir) return;
+  try{ await deleteDoc(doc(db,'plantoes',keyExcluir)); toast('🗑️ Plantão excluído.'); fecharModal(); }
+  catch(e){ toast('❌ '+e.message,'#E53E3E'); }
+};
+
+// WHATSAPP
+window.compartilharWA=function(key){
+  const r=plantoes.find(x=>x.key===key); if(!r) return;
+  const d=r.data.split('-'); const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
+  let txt=`*DATA: ${d[2]}/${d[1]}/${d[0]} — ${ds}*\n*Plantão: ${r.turno}*\n\n`;
+  CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+    const pp=r.equipe?.[cat.id]||[];
+    const nomes=pp.length?pp.map(p=>p.nome+(p.obs?` (${p.obs})`:'')).join(', '):'?';
+    txt+=`*${cat.label}:* ${nomes}\n\n`;
+  });
+  const p3=r.equipe?.p3;
+  if(p3){ txt+=`*P3 Manhã:* ${p3.manha?.nome||'?'}${p3.manha?.obs?' ('+p3.manha.obs+')':''}\n*P3 Tarde:* ${p3.tarde?.nome||'?'}${p3.tarde?.obs?' ('+p3.tarde.obs+')':''}\n\n`; }
+  if(r.obs) txt+=`*Obs:* ${r.obs}\n`;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+};
+
+// ===== VIEW CATEGORIA =====
+let viewAtual='lista';
+window.setView=function(v){
+  viewAtual=v;
+  document.getElementById('btn-view-lista').classList.toggle('active',v==='lista');
+  document.getElementById('btn-view-cat').classList.toggle('active',v==='categoria');
+  document.getElementById('view-lista').style.display=v==='lista'?'block':'none';
+  document.getElementById('view-categoria').style.display=v==='categoria'?'block':'none';
+  if(v==='categoria'){
+    const sel=document.getElementById('fi-cat');
+    sel.innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+    renderTabelaCat();
+  }
+};
+
+window.renderTabelaCat=function(){
+  const catFiltro=document.getElementById('fi-cat').value;
+  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data));
+  const wrap=document.getElementById('tabela-cat-wrap');
+  if(lista.length===0){ wrap.innerHTML='<div class="empty"><div class="big">📋</div><div>Nenhum plantão no período.</div></div>'; return; }
+  const catsRender=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
+  let html='';
+  catsRender.forEach(cat=>{
+    // Coletar nomes únicos
+    const nomeSet=new Set();
+    lista.forEach(r=>{
+      if(cat.id==='p3'){
+        if(r.equipe?.p3?.manha?.nome) nomeSet.add(r.equipe.p3.manha.nome);
+        if(r.equipe?.p3?.tarde?.nome) nomeSet.add(r.equipe.p3.tarde.nome);
+      } else {
+        (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome) nomeSet.add(p.nome); });
+      }
+    });
+    if(nomeSet.size===0) return;
+    const nomes=[...nomeSet].sort();
+    html+=`<div style="margin-bottom:18px;">
+      <div class="cat-secao-titulo">${cat.icon} ${cat.label} <span style="font-weight:400;font-size:0.75rem;">(${nomes.length} profissional${nomes.length>1?'is':''})</span></div>
+      <div class="tabela-wrap"><table class="tabela-cat">
+        <thead><tr>
+          <th class="th-nome">Profissional</th>
+          ${lista.map(r=>{
+            const [,m,d]=r.data.split('-');
+            const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
+            return `<th class="th-data" title="${fmtData(r.data)} ${r.turno}">${d}/${m}<br><small>${ds}</small></th>`;
+          }).join('')}
+          <th class="th-total">Total</th>
+        </tr></thead>
+        <tbody>
+        ${nomes.map(nome=>{
+          let total=0;
+          const cels=lista.map(r=>{
+            let siglas=[];
+            if(cat.id==='p3'){
+              if(r.equipe?.p3?.manha?.nome===nome) siglas.push('M');
+              if(r.equipe?.p3?.tarde?.nome===nome) siglas.push('T');
+            } else {
+              (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
+            }
+            if(siglas.length){ total++; return `<td>${siglas.map(s=>`<span class="sigla-${s}">${s}</span>`).join(' ')}</td>`; }
+            return '<td style="color:var(--cinza-borda);">—</td>';
+          }).join('');
+          return `<tr><td class="td-nome" title="${nome}">${abr(nome)}</td>${cels}<td class="td-total">${total}</td></tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+  });
+  wrap.innerHTML=html||'<div class="empty"><div class="big">📋</div><div>Sem dados para esta categoria.</div></div>';
+};
+
+window.exportarCatCSV=function(){
+  const catFiltro=document.getElementById('fi-cat').value;
+  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data));
+  if(!lista.length){ toast('⚠️ Nenhum dado.','#E53E3E'); return; }
+  const catsEx=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
+  let csv='\uFEFF';
+  catsEx.forEach(cat=>{
+    const nomeSet=new Set();
+    lista.forEach(r=>{
+      if(cat.id==='p3'){ if(r.equipe?.p3?.manha?.nome) nomeSet.add(r.equipe.p3.manha.nome); if(r.equipe?.p3?.tarde?.nome) nomeSet.add(r.equipe.p3.tarde.nome); }
+      else (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome) nomeSet.add(p.nome); });
+    });
+    if(!nomeSet.size) return;
+    const nomes=[...nomeSet].sort();
+    csv+=`\n${cat.label.toUpperCase()}\n`;
+    csv+=['Profissional',...lista.map(r=>fmtData(r.data)),'Total'].join(';')+'\n';
+    nomes.forEach(nome=>{
+      let total=0;
+      const linha=[nome];
+      lista.forEach(r=>{
+        let siglas=[];
+        if(cat.id==='p3'){ if(r.equipe?.p3?.manha?.nome===nome) siglas.push('M'); if(r.equipe?.p3?.tarde?.nome===nome) siglas.push('T'); }
+        else (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
+        if(siglas.length){ total++; linha.push(siglas.join('+')); } else linha.push('');
+      });
+      linha.push(total); csv+=linha.join(';')+'\n';
+    });
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`escala_uped_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+  toast('⬇️ CSV exportado!');
+};
+
+// ===== SWITCH TAB =====
+window.switchTab=function(tab, semSenha){
+  if(tab==='equipe' && !semSenha){
+    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{
+      switchTab('equipe', true);
+    });
+    return;
+  }
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const tabs={registrar:0,consultar:1,producao:2,dashboard:3,equipe:4};
+  document.querySelectorAll('.tab-btn')[tabs[tab]].classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='consultar'){
+    if(viewAtual==='lista') renderLista(plantoesFiltrados());
+    else { document.getElementById('fi-cat').innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join(''); renderTabelaCat(); }
+  }
+  if(tab==='producao'){ verificarBloqueio(); filtrarProducao(); }
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='equipe'){ renderListaProfs(); }
+};
+
+// ===== PRODUÇÃO =====
+onSnapshot(query(collection(db,'producao'),orderBy('data','desc')),snap=>{
+  producoes=snap.docs.map(d=>({...d.data(),key:d.id}));
+  const panel=document.getElementById('panel-producao');
+  if(panel.classList.contains('active')){ verificarBloqueio(); filtrarProducao(); }
+});
+
+CAMPOS_FICHAS.forEach(c=>{
+  const el=document.getElementById('p-'+c);
+  if(el) el.addEventListener('input',calcTotal);
+});
+function calcTotal(){
+  document.getElementById('p-total').textContent=CAMPOS_FICHAS.reduce((s,c)=>s+(parseInt(document.getElementById('p-'+c).value)||0),0);
+}
+
+function chaveProd(){ const d=document.getElementById('fp-data').value; const t=document.getElementById('fp-turno').value; return d&&t?d+'_'+t:null; }
+
+async function verificarBloqueio(){
+  const chave=chaveProd(); if(!chave) return;
+  const snap=await getDoc(doc(db,'producao',chave));
+  const aviso=document.getElementById('prod-aviso');
+  const campos=document.querySelectorAll('#prod-campos input,#prod-campos-comp input');
+  const btn=document.getElementById('btn-salvar-prod');
+  if(snap.exists()){
+    const d=snap.data(); prodBloqueado=true;
+    aviso.style.display='flex';
+    document.getElementById('prod-aviso-txt').textContent=`Registrado em ${new Date(d.registradoEm).toLocaleString('pt-BR')}${d.editadoEm?' · editado em '+new Date(d.editadoEm).toLocaleString('pt-BR'):''}.`;
+    campos.forEach(el=>el.disabled=true); btn.disabled=true;
+    CAMPOS_PROD.forEach(c=>{ const el=document.getElementById('p-'+c); if(el) el.value=d[c]||0; }); calcTotal();
+  } else {
+    prodBloqueado=false; aviso.style.display='none';
+    campos.forEach(el=>el.disabled=false); btn.disabled=false;
+    btn.textContent='💾 Registrar Produção';
+    CAMPOS_PROD.forEach(c=>{ const el=document.getElementById('p-'+c); if(el) el.value=0; }); calcTotal();
+  }
+}
+document.getElementById('fp-data').addEventListener('change',verificarBloqueio);
+document.getElementById('fp-turno').addEventListener('change',verificarBloqueio);
+
+window.editarProducao=()=>{
+  abrirSenha('✏️ Editar Produção','Informe a senha de supervisor para editar este registro.',()=>{
+    const campos=document.querySelectorAll('#prod-campos input,#prod-campos-comp input');
+    campos.forEach(el=>el.disabled=false);
+    document.getElementById('btn-salvar-prod').disabled=false;
+    document.getElementById('btn-salvar-prod').textContent='💾 Salvar Edição';
+    document.getElementById('prod-aviso-txt').textContent='✏️ Modo edição — salve ao concluir.';
+    toast('🔓 Edição liberada.','#F59E0B');
+  });
+};
+
+async function salvarProducao(){
+  const chave=chaveProd(); if(!chave){ toast('⚠️ Selecione data e turno!','#E53E3E'); return; }
+  const dados={key:chave,data:document.getElementById('fp-data').value,turno:document.getElementById('fp-turno').value};
+  CAMPOS_PROD.forEach(c=>{ dados[c]=parseInt(document.getElementById('p-'+c).value)||0; });
+  dados.total=CAMPOS_FICHAS.reduce((s,c)=>s+dados[c],0);
+  if(prodBloqueado) dados.editadoEm=new Date().toISOString();
+  else dados.registradoEm=new Date().toISOString();
+  const btn=document.getElementById('btn-salvar-prod'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    await setDoc(doc(db,'producao',chave),dados);
+    toast('✅ Produção registrada!');
+    // Avança turno
+    const dt=document.getElementById('fp-data').value; const tr=document.getElementById('fp-turno').value;
+    if(tr==='NOTURNO'){ const d=new Date(dt+'T12:00:00'); d.setDate(d.getDate()+1); document.getElementById('fp-data').value=d.toISOString().slice(0,10); document.getElementById('fp-turno').value='DIURNO'; }
+    else { document.getElementById('fp-turno').value='NOTURNO'; }
+    await verificarBloqueio();
+  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Registrar Produção'; }
+}
+window.salvarProducao=salvarProducao;
+
+function getProdFiltradas(){
+  const ini=document.getElementById('rp-ini').value; const fim=document.getElementById('rp-fim').value; const trn=document.getElementById('rp-turno').value;
+  return producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data));
+}
+function filtrarProducao(){ const l=getProdFiltradas(); renderResumoProd(l); renderGraficoProd(l); renderHistProd(l); }
+window.filtrarProducao=filtrarProducao;
+function limparProd(){ ['rp-ini','rp-fim'].forEach(id=>document.getElementById(id).value=''); document.getElementById('rp-turno').value=''; filtrarProducao(); }
+window.limparProd=limparProd;
+
+function renderResumoProd(l){
+  const el=document.getElementById('resumo-prod'); if(!l.length){ el.innerHTML=''; return; }
+  const s=c=>l.reduce((a,r)=>a+(r[c]||0),0);
+  const med=Math.round(s('total')/l.length);
+  el.innerHTML=`
+    <div class="resumo-card"><div class="rc-label">Plantões</div><div class="rc-val">${l.length}</div><div class="rc-sub">registrados</div></div>
+    <div class="resumo-card"><div class="rc-label">Atendimentos</div><div class="rc-val">${s('total')}</div><div class="rc-sub">média ${med}/plantão</div></div>
+    <div class="resumo-card"><div class="rc-label">Internamentos</div><div class="rc-val">${s('internamento')}</div><div class="rc-sub">no período</div></div>
+    <div class="resumo-card"><div class="rc-label">Transferências</div><div class="rc-val">${s('transferencia')}</div><div class="rc-sub">no período</div></div>
+    <div class="resumo-card"><div class="rc-label">Óbitos</div><div class="rc-val" style="color:${s('obito')>0?'var(--vermelho)':'var(--azul)'}">${s('obito')}</div><div class="rc-sub">no período</div></div>`;
+}
+function renderGraficoProd(l){
+  const wrap=document.getElementById('chart-wrap-prod');
+  if(l.length<2){ wrap.style.display='none'; if(chartProd){chartProd.destroy();chartProd=null;} return; }
+  wrap.style.display='block';
+  if(chartProd){chartProd.destroy();chartProd=null;}
+  const labels=l.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'☀':'☾'}`;});
+  chartProd=new Chart(document.getElementById('chart-prod'),{type:'bar',data:{labels,datasets:[{label:'Atendimentos',data:l.map(r=>r.total||0),backgroundColor:'#3D8BCD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+}
+function renderHistProd(l){
+  const el=document.getElementById('lista-prod');
+  if(!l.length){ el.innerHTML='<div class="empty"><div class="big">📊</div><div>Nenhuma produção registrada.</div></div>'; return; }
+  el.innerHTML=[...l].reverse().map(r=>{
+    const[a,m,d]=r.data.split('-');
+    const itens=CAMPOS_PROD.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_PROD[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+    return `<div class="prod-hist-card">
+      <div class="prod-hist-header" onclick="toggleProdCard(this)">
+        <span>${d}/${m}/${a}</span>
+        <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'☀️':'🌙'} ${r.turno}</span>
+        ${r.editadoEm?'<span class="editado-badge">editado</span>':''}
+        <span style="margin-left:auto;font-size:0.78rem;background:var(--azul);color:white;padding:2px 9px;border-radius:20px;font-weight:700;">${r.total||0} atend.</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="prod-hist-body"><div class="prod-num-grid">${itens}</div></div>
+    </div>`;
+  }).join('');
+}
+window.toggleProdCard=function(h){ const b=h.nextElementSibling; b.classList.toggle('open'); h.querySelector('.chevron').classList.toggle('open',b.classList.contains('open')); };
+
+window.exportarProdCSV=function(){
+  const l=getProdFiltradas(); if(!l.length){ toast('⚠️ Nenhum dado.','#E53E3E'); return; }
+  const cab=['Data','Turno',...CAMPOS_PROD.map(c=>LABELS_PROD[c].replace(/[^\w\s]/g,'').trim()),'Total'].join(';');
+  const linhas=l.map(r=>{ const[a,m,d]=r.data.split('-'); return [`${d}/${m}/${a}`,r.turno,...CAMPOS_PROD.map(c=>r[c]||0),r.total||0].join(';'); });
+  const csv='\uFEFF'+[cab,...linhas].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`producao_uped_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+  toast('⬇️ CSV exportado!');
+};
+window.exportarProdCSV=window.exportarProdCSV;
+
+// ===== DASHBOARD =====
+window.renderDashboard=function(){
+  const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value; const trn=document.getElementById('db-turno').value;
+  const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data));
+  const el=document.getElementById('dash-conteudo');
+  if(!dados.length){ el.innerHTML='<div class="dash-vazio"><div class="big">📊</div><div>Nenhum dado no período.</div></div>'; return; }
+  const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+  const total=s('total'); const n=dados.length; const med=Math.round(total/n);
+  const verm=s('vermelha'); const lar=s('laranja'); const amr=s('amarela'); const verd=s('verde'); const azul=s('azul');
+  const pGrav=total?Math.round((verm+lar)/total*100):0; const pMod=total?Math.round(amr/total*100):0; const pBaixa=100-pGrav-pMod;
+  const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
+  const st=(l,c)=>l.reduce((a,r)=>a+(r[c]||0),0);
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Plantões</div><div class="kpi-valor">${n}</div><div class="kpi-sub">${diu.length} diurno · ${not.length} noturno</div></div>
+      <div class="kpi-card"><div class="kpi-label">Atendimentos</div><div class="kpi-valor">${total}</div><div class="kpi-sub">média ${med}/plantão</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gravidade alta</div><div class="kpi-valor ${pGrav>=15?'verm':pGrav>=8?'amar':'verd'}">${pGrav}%</div><div class="kpi-sub">🔴 ${verm} · 🟠 ${lar}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Internamentos</div><div class="kpi-valor">${s('internamento')}</div><div class="kpi-sub">${total?((s('internamento')/total)*100).toFixed(1):0}% dos atend.</div></div>
+      <div class="kpi-card"><div class="kpi-label">Transferências</div><div class="kpi-valor">${s('transferencia')}</div><div class="kpi-sub">no período</div></div>
+      <div class="kpi-card"><div class="kpi-label">Óbitos</div><div class="kpi-valor ${s('obito')>0?'verm':''}">${s('obito')}</div><div class="kpi-sub">no período</div></div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-card full">
+        <div class="dash-titulo">Evolução de atendimentos</div>
+        <div style="position:relative;width:100%;height:200px;"><canvas id="ch-ev"></canvas></div>
+      </div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-card">
+        <div class="dash-titulo">Distribuição por ficha</div>
+        <div style="position:relative;width:100%;height:190px;"><canvas id="ch-fichas"></canvas></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-titulo">Diurno × Noturno</div>
+        <div class="turno-comp">
+          <div class="turno-bloco"><div class="turno-titulo">☀️ Diurno (${diu.length})</div>
+            ${[['Total',st(diu,'total')],['Média',diu.length?Math.round(st(diu,'total')/diu.length):0],['Internamentos',st(diu,'internamento')],['Transferências',st(diu,'transferencia')],['Sint. Gripais',st(diu,'gripais')]].map(([l,v])=>`<div class="turno-linha"><span>${l}</span><span class="val">${v}</span></div>`).join('')}
+          </div>
+          <div class="turno-bloco"><div class="turno-titulo">🌙 Noturno (${not.length})</div>
+            ${[['Total',st(not,'total')],['Média',not.length?Math.round(st(not,'total')/not.length):0],['Internamentos',st(not,'internamento')],['Transferências',st(not,'transferencia')],['Sint. Gripais',st(not,'gripais')]].map(([l,v])=>`<div class="turno-linha"><span>${l}</span><span class="val">${v}</span></div>`).join('')}
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="dash-titulo" style="margin-bottom:6px;">Perfil de gravidade</div>
+          <div class="grav-barra"><div style="width:${pBaixa}%;background:#22C55E;"></div><div style="width:${pMod}%;background:#F59E0B;"></div><div style="width:${pGrav}%;background:#EF4444;"></div></div>
+          <div class="grav-legend">
+            <div class="grav-item"><div class="grav-dot" style="background:#22C55E;"></div>Baixa ${pBaixa}%</div>
+            <div class="grav-item"><div class="grav-dot" style="background:#F59E0B;"></div>Moderada ${pMod}%</div>
+            <div class="grav-item"><div class="grav-dot" style="background:#EF4444;"></div>Alta ${pGrav}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dash-card" style="margin-bottom:14px;">
+      <div class="dash-titulo">Informações complementares</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px;">
+        ${[['🤧 Sint. Gripais',s('gripais')],['🪡 Sutura',s('sutura')],['🛏️ Internamento',s('internamento')],['✅ Alta',s('alta')],['🚪 Evasão',s('evasao')],['🚑 Transferência',s('transferencia')],['⚫ Óbito',s('obito')]].map(([l,v])=>`<div style="background:var(--cinza-claro);border-radius:8px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.78rem;color:var(--cinza);">${l}</span><span style="font-size:1rem;font-weight:700;">${v}</span></div>`).join('')}
+      </div>
+    </div>`;
+  if(chartEv){chartEv.destroy();chartEv=null;} if(chartFichas){chartFichas.destroy();chartFichas=null;}
+  chartEv=new Chart(document.getElementById('ch-ev'),{type:'line',data:{labels:dados.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'☀':'☾'}`;}),datasets:[{label:'Atend.',data:dados.map(r=>r.total||0),borderColor:'#1B6CA8',backgroundColor:'rgba(27,108,168,0.1)',tension:0.3,fill:true,pointRadius:3},{label:'Intern.',data:dados.map(r=>r.internamento||0),borderColor:'#2E7D57',borderDash:[5,3],tension:0.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+  chartFichas=new Chart(document.getElementById('ch-fichas'),{type:'bar',data:{labels:['🔵 Azul','🟢 Verde','🟡 Amarela','🟠 Laranja','🔴 Vermelha'],datasets:[{data:[azul,verd,amr,lar,verm],backgroundColor:['#3B82F6','#22C55E','#EAB308','#F97316','#EF4444'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
+};
+window.limparDashboard=function(){
+  const h=new Date(); const h30=new Date(); h30.setDate(h.getDate()-30);
+  document.getElementById('db-fim').valueAsDate=h; document.getElementById('db-ini').valueAsDate=h30;
+  document.getElementById('db-turno').value=''; renderDashboard();
+};
+
+// ===== INIT =====
+document.getElementById('footer-ano').textContent=new Date().getFullYear();
+document.getElementById('f-data').valueAsDate=new Date();
+document.getElementById('fp-data').valueAsDate=new Date();
+(function(){ const h=new Date(); const h30=new Date(); h30.setDate(h.getDate()-30); document.getElementById('db-fim').valueAsDate=h; document.getElementById('db-ini').valueAsDate=h30; })();
+initEstado();
+rebuildarForm();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</body>
+</html>
+8F1FA; --azul-mid:#3D8BCD;
   --verde:#2E7D57; --cinza:#64748B; --cinza-claro:#F0F4F8;
   --cinza-borda:#CBD5E1; --vermelho:#E53E3E; --amarelo:#F59E0B; --texto:#1E293B;
 }
