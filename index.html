@@ -539,6 +539,28 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   </div>
 </div>
 
+<!-- MODAL CONFIRMAÇÃO PÓS-SALVAR -->
+<div class="modal-overlay hidden" id="modal-confirmacao">
+  <div class="modal-box" style="max-width:480px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <span style="font-size:1.8rem;">✅</span>
+      <div>
+        <div style="font-weight:700;font-size:1rem;color:var(--verde);">Plantão salvo com sucesso!</div>
+        <div style="font-size:0.78rem;color:var(--cinza);">Resumo do plantão registrado</div>
+      </div>
+    </div>
+    <div id="modal-conf-resumo" style="background:var(--cinza-claro);border-radius:8px;padding:12px 14px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button id="modal-conf-wa" style="flex:1;padding:11px;background:#25D366;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;gap:7px;">
+        📲 Enviar no WhatsApp
+      </button>
+      <button onclick="fecharModalConf()" style="padding:11px 18px;background:var(--cinza-claro);color:var(--cinza);border:1.5px solid var(--cinza-borda);border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <footer style="background:#0F3D6B;color:rgba(255,255,255,0.85);padding:16px 24px;font-family:'Segoe UI',system-ui,sans-serif;margin-top:8px;">
@@ -908,10 +930,26 @@ async function salvar() {
   btn.disabled=true; btn.textContent='Salvando...';
   try {
     await setDoc(doc(db,'plantoes',key),reg);
-    toast('✅ Escala salva!'); novoRegistro();
+    abrirModalConfirmacao(reg);
   } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Salvar Escala do Plantão'; }
 }
-window.salvar=salvar;
+function abrirModalConfirmacao(reg) {
+  const [a,m,d]=reg.data.split('-');
+  const ds=DIAS[new Date(reg.data+'T12:00:00').getDay()];
+  const meds=(reg.equipe?.medico||[]).map(p=>nomeWA(p.nome,'medico')).filter(Boolean);
+  const enfs=(reg.equipe?.enfermeiro||[]).map(p=>abr(p.nome)).filter(Boolean);
+  const tecs=(reg.equipe?.tec_enf||[]).map(p=>abr(p.nome)).filter(Boolean);
+  let resumo=`<div style="font-size:0.9rem;font-weight:700;margin-bottom:10px;color:var(--azul)">${d}/${m}/${a} — ${ds} · ${reg.turno}</div>`;
+  if(meds.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;">👨‍⚕️ <b>Médicos:</b> ${meds.join(', ')}</div>`;
+  if(enfs.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;">🩺 <b>Enfermeiros:</b> ${enfs.join(', ')}</div>`;
+  if(tecs.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;">👩🏻‍⚕️ <b>Téc. Enf.:</b> ${tecs.join(', ')}</div>`;
+  if(reg.obs) resumo+=`<div style="font-size:0.82rem;margin-top:6px;color:var(--cinza);">📝 ${reg.obs}</div>`;
+  document.getElementById('modal-conf-resumo').innerHTML=resumo;
+  document.getElementById('modal-conf-wa').onclick=()=>{ window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoWA(reg)),'_blank'); };
+  document.getElementById('modal-confirmacao').classList.remove('hidden');
+}
+window.fecharModalConf=function(){ document.getElementById('modal-confirmacao').classList.add('hidden'); novoRegistro(); };
+window.fecharModalConfNovo=function(){ document.getElementById('modal-confirmacao').classList.add('hidden'); novoRegistro(); };
 
 // ===== LISTENER PLANTÕES =====
 onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
@@ -931,10 +969,7 @@ onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
 });
 
 function atualizarBadge() {
-  const tab=document.getElementById('tab-consultar');
-  let b=tab.querySelector('.badge-count');
-  if(!b){ b=document.createElement('span'); b.className='badge-count'; tab.appendChild(b); }
-  b.textContent=plantoes.length;
+  // Badge removido a pedido
 }
 
 // ===== CONSULTA PLANTÕES =====
@@ -1056,19 +1091,32 @@ window.confirmarExclusao=async function(){
 };
 
 // WHATSAPP
-window.compartilharWA=function(key){
-  const r=plantoes.find(x=>x.key===key); if(!r) return;
+function nomeWA(nome, catId) {
+  const abreviado = abr(nome);
+  return catId === 'medico' ? `Dr. ${abreviado}` : abreviado;
+}
+
+function gerarTextoWA(r) {
   const d=r.data.split('-'); const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
   let txt=`*DATA: ${d[2]}/${d[1]}/${d[0]} — ${ds}*\n*Plantão: ${r.turno}*\n\n`;
   CATS.filter(c=>c.id!=='p3').forEach(cat=>{
     const pp=r.equipe?.[cat.id]||[];
-    const nomes=pp.length?pp.map(p=>p.nome+(p.obs?` (${p.obs})`:'')).join(', '):'?';
+    if(!pp.length) return;
+    const nomes=pp.map(p=>nomeWA(p.nome,cat.id)+(p.obs?` (${p.obs})`:'')).join(', ');
     txt+=`*${cat.label}:* ${nomes}\n\n`;
   });
   const p3=r.equipe?.p3;
-  if(p3){ txt+=`*P3 Manhã:* ${p3.manha?.nome||'?'}${p3.manha?.obs?' ('+p3.manha.obs+')':''}\n*P3 Tarde:* ${p3.tarde?.nome||'?'}${p3.tarde?.obs?' ('+p3.tarde.obs+')':''}\n\n`; }
+  if(p3?.manha?.nome||p3?.tarde?.nome){
+    txt+=`*P3 Manhã:* ${p3.manha?.nome?nomeWA(p3.manha.nome,'medico'):'—'}${p3.manha?.obs?' ('+p3.manha.obs+')':''}\n`;
+    txt+=`*P3 Tarde:* ${p3.tarde?.nome?nomeWA(p3.tarde.nome,'medico'):'—'}${p3.tarde?.obs?' ('+p3.tarde.obs+')':''}\n\n`;
+  }
   if(r.obs) txt+=`*Obs:* ${r.obs}\n`;
-  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  return txt;
+}
+
+window.compartilharWA=function(key){
+  const r=plantoes.find(x=>x.key===key); if(!r) return;
+  window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoWA(r)),'_blank');
 };
 
 // ===== VIEW CATEGORIA =====
@@ -1340,7 +1388,7 @@ function renderGraficoProd(l){
   if(l.length<2){ wrap.style.display='none'; if(chartProd){chartProd.destroy();chartProd=null;} return; }
   wrap.style.display='block';
   if(chartProd){chartProd.destroy();chartProd=null;}
-  const labels=l.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'☀':'☾'}`;});
+  const labels=l.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'D':'N'}`;});
   chartProd=new Chart(document.getElementById('chart-prod'),{type:'bar',data:{labels,datasets:[{label:'Atendimentos',data:l.map(r=>r.total||0),backgroundColor:'#3D8BCD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
 }
 function renderHistProd(l){
