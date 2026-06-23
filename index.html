@@ -221,7 +221,19 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 .comp-total { font-size:0.72rem; background:var(--cinza-claro); border-radius:7px; padding:9px 12px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:8px; }
 .comp-total span { font-weight:700; color:var(--texto); } .comp-total small { color:var(--cinza); }
 
-/* TOAST */
+/* INÍCIO */
+.inicio-card { background:white; border-radius:12px; border:1px solid var(--cinza-borda); padding:20px 18px; cursor:pointer; transition:all 0.18s; }
+.inicio-card:hover { border-color:var(--azul); box-shadow:0 4px 16px rgba(27,108,168,0.12); transform:translateY(-2px); }
+.inicio-card-icon { font-size:2rem; margin-bottom:10px; }
+.inicio-card-titulo { font-size:0.95rem; font-weight:700; color:var(--azul); margin-bottom:5px; }
+.inicio-card-desc { font-size:0.78rem; color:var(--cinza); line-height:1.45; }
+@media (max-width:580px) { #inicio-resumo { grid-template-columns:1fr; } }
+
+/* CHART LEGEND */
+.chart-legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+.chart-legend-item { display:flex; align-items:center; gap:5px; font-size:0.76rem; color:var(--cinza); }
+.chart-legend-line { width:22px; height:3px; border-radius:2px; }
+.chart-legend-dash { width:22px; height:0; border-top:2.5px dashed; border-radius:2px; }
 .toast { position:fixed; bottom:20px; right:20px; background:var(--verde); color:white; padding:11px 18px; border-radius:9px; font-weight:600; font-size:0.88rem; box-shadow:0 4px 16px rgba(0,0,0,0.15); opacity:0; transform:translateY(10px); transition:all 0.3s; z-index:1100; pointer-events:none; }
 .toast.show { opacity:1; transform:translateY(0); }
 
@@ -284,15 +296,45 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 </header>
 
 <div class="tabs">
-  <button class="tab-btn active"  onclick="switchTab('registrar')">✏️ Registrar Plantão</button>
+  <button class="tab-btn active" onclick="switchTab('inicio')">🏠 Início</button>
+  <button class="tab-btn" onclick="switchTab('registrar')">✏️ Registrar Plantão</button>
   <button class="tab-btn" id="tab-consultar" onclick="switchTab('consultar')">📋 Consultar Plantões</button>
   <button class="tab-btn" onclick="switchTab('producao')">📊 Registro de Produção</button>
-  <button class="tab-btn" onclick="switchTab('dashboard')">📈 Dashboard</button>
-  <button class="tab-btn" onclick="switchTab('equipe')">👥 Equipe</button>
+  <button class="tab-btn" onclick="switchTab('gestao')">📈 Gestão</button>
 </div>
 
-<!-- ===== REGISTRAR ===== -->
-<div class="tab-panel active" id="panel-registrar">
+<!-- ===== INÍCIO ===== -->
+<div class="tab-panel active" id="panel-inicio">
+  <!-- Cards de acesso rápido -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;">
+    <div class="inicio-card" onclick="switchTab('registrar')">
+      <div class="inicio-card-icon">✏️</div>
+      <div class="inicio-card-titulo">Registrar Plantão</div>
+      <div class="inicio-card-desc">Cadastre a escala do plantão atual com toda a equipe</div>
+    </div>
+    <div class="inicio-card" onclick="switchTab('consultar')">
+      <div class="inicio-card-icon">📋</div>
+      <div class="inicio-card-titulo">Consultar Plantões</div>
+      <div class="inicio-card-desc">Visualize e filtre os plantões registrados</div>
+    </div>
+    <div class="inicio-card" onclick="switchTab('producao')">
+      <div class="inicio-card-icon">📊</div>
+      <div class="inicio-card-titulo">Registro de Produção</div>
+      <div class="inicio-card-desc">Registre os atendimentos ao final de cada plantão</div>
+    </div>
+    <div class="inicio-card" onclick="switchTab('gestao')">
+      <div class="inicio-card-icon">📈</div>
+      <div class="inicio-card-titulo">Gestão</div>
+      <div class="inicio-card-desc">Dashboard, histórico de produção e gerenciamento de equipe</div>
+    </div>
+  </div>
+  <!-- Resumo do dia -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="inicio-resumo">
+    <div class="card"><div class="card-title" style="display:block;">📅 Último Plantão Registrado</div><div id="inicio-ultimo-plantao" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
+    <div class="card"><div class="card-title" style="display:block;">⏰ Próximo Turno do Dia</div><div id="inicio-proximo-turno" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
+  </div>
+</div>
+<div class="tab-panel" id="panel-registrar">
   <div class="card">
     <div class="card-title" style="display:block;">📅 Dados do Plantão</div>
     <div class="form-row">
@@ -416,71 +458,85 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     </div>
     <button class="btn-salvar" id="btn-salvar-prod" onclick="salvarProducao()">💾 Registrar Produção</button>
   </div>
-  <div class="card">
-    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>📈 Histórico</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-        <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rp-ini"></div>
-        <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rp-fim"></div>
-        <div class="form-group" style="min-width:100px;"><label>Turno</label>
-          <select id="rp-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
-        </div>
-        <button class="btn-filtrar" onclick="filtrarProducao()" style="margin-bottom:0">🔍</button>
-        <button class="btn-limpar" onclick="limparProd()" style="margin-bottom:0">✕</button>
-        <button class="btn-exportar" onclick="exportarProdCSV()">⬇️ CSV</button>
+</div>
+
+<!-- ===== GESTÃO ===== -->
+<div class="tab-panel" id="panel-gestao">
+  <!-- Tabs internas -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="btn-view active" id="gtab-dash" onclick="switchGestao('dash')">📈 Dashboard</button>
+    <button class="btn-view" id="gtab-hist" onclick="switchGestao('hist')">📊 Histórico de Produção</button>
+    <button class="btn-view" id="gtab-equipe" onclick="switchGestao('equipe')">👥 Equipe</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="gsec-dash">
+    <div class="dash-filtros">
+      <div class="form-group" style="min-width:120px;"><label>De</label><input type="date" id="db-ini"></div>
+      <div class="form-group" style="min-width:120px;"><label>Até</label><input type="date" id="db-fim"></div>
+      <div class="form-group" style="min-width:110px;">
+        <label>Turno</label>
+        <select id="db-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
       </div>
+      <button class="btn-filtrar" onclick="renderDashboard()">🔍 Aplicar</button>
+      <button class="btn-limpar" onclick="limparDashboard()">✕</button>
     </div>
-    <div class="resumo-grid" id="resumo-prod"></div>
-    <div class="chart-wrap" id="chart-wrap-prod" style="display:none;">
-      <div class="chart-titulo">Atendimentos por plantão</div>
-      <div style="position:relative;width:100%;height:200px;"><canvas id="chart-prod"></canvas></div>
-    </div>
-    <div id="lista-prod"></div>
+    <div id="dash-conteudo"><div class="dash-vazio"><div class="big">📈</div><div>Carregando...</div></div></div>
   </div>
-</div>
 
-<!-- ===== DASHBOARD ===== -->
-<div class="tab-panel" id="panel-dashboard">
-  <div class="dash-filtros">
-    <div class="form-group" style="min-width:120px;"><label>De</label><input type="date" id="db-ini"></div>
-    <div class="form-group" style="min-width:120px;"><label>Até</label><input type="date" id="db-fim"></div>
-    <div class="form-group" style="min-width:110px;">
-      <label>Turno</label>
-      <select id="db-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
+  <!-- Histórico Produção -->
+  <div id="gsec-hist" style="display:none;">
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span>📊 Histórico de Produção</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rp-ini"></div>
+          <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rp-fim"></div>
+          <div class="form-group" style="min-width:100px;"><label>Turno</label>
+            <select id="rp-turno"><option value="">Todos</option><option value="DIURNO">☀️ Diurno</option><option value="NOTURNO">🌙 Noturno</option></select>
+          </div>
+          <button class="btn-filtrar" onclick="filtrarProducao()" style="margin-bottom:0">🔍</button>
+          <button class="btn-limpar" onclick="limparProd()" style="margin-bottom:0">✕</button>
+          <button class="btn-exportar" onclick="exportarProdCSV()">⬇️ CSV</button>
+        </div>
+      </div>
+      <div class="resumo-grid" id="resumo-prod"></div>
+      <div class="chart-wrap" id="chart-wrap-prod" style="display:none;">
+        <div class="chart-titulo">Atendimentos por plantão</div>
+        <div style="position:relative;width:100%;height:200px;"><canvas id="chart-prod"></canvas></div>
+      </div>
+      <div id="lista-prod"></div>
     </div>
-    <button class="btn-filtrar" onclick="renderDashboard()">🔍 Aplicar</button>
-    <button class="btn-limpar" onclick="limparDashboard()">✕</button>
   </div>
-  <div id="dash-conteudo"><div class="dash-vazio"><div class="big">📈</div><div>Carregando...</div></div></div>
-</div>
 
-<!-- ===== EQUIPE ===== -->
-<div class="tab-panel" id="panel-equipe">
-  <div class="card">
-    <div class="card-title" style="display:block;">👥 Gerenciar Profissionais</div>
-    <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais cadastrados em <strong>Médicos Plantonistas</strong>.</p>
-    <div class="add-prof-row">
-      <select id="new-prof-cat" onchange="renderListaProfs()">
-        <option value="recepcao">👩‍💻 Recepção</option>
-        <option value="portaria">🫸🏻 Ag. de Portaria</option>
-        <option value="maqueiro">🧑‍🦽 Maqueiro</option>
-        <option value="motorista">🚑 Motorista</option>
-        <option value="cozinheira">👩🏻‍🍳 Cozinheira</option>
-        <option value="asg">🚮 ASG</option>
-        <option value="copa">🛎️ Copa</option>
-        <option value="farmacia">💊 Farmácia</option>
-        <option value="social">👩‍🏫 Serviço Social</option>
-        <option value="tec_enf">👩🏻‍⚕️ Téc. Enfermagem</option>
-        <option value="enfermeiro">🩺 Enfermeiros(as)</option>
-        <option value="medico">👨‍⚕️ Médicos Plantonistas</option>
-        <option value="fisio">🦺 Fisioterapeuta</option>
-      </select>
-      <input type="text" id="new-prof-nome" placeholder="Nome completo do profissional">
-      <button class="btn-add-prof" onclick="adicionarProfissional()">+ Adicionar</button>
+  <!-- Equipe -->
+  <div id="gsec-equipe" style="display:none;">
+    <div class="card">
+      <div class="card-title" style="display:block;">👥 Gerenciar Profissionais</div>
+      <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais cadastrados em <strong>Médicos Plantonistas</strong>.</p>
+      <div class="add-prof-row">
+        <select id="new-prof-cat" onchange="renderListaProfs()">
+          <option value="recepcao">👩‍💻 Recepção</option>
+          <option value="portaria">🫸🏻 Ag. de Portaria</option>
+          <option value="maqueiro">🧑‍🦽 Maqueiro</option>
+          <option value="motorista">🚑 Motorista</option>
+          <option value="cozinheira">👩🏻‍🍳 Cozinheira</option>
+          <option value="asg">🚮 ASG</option>
+          <option value="copa">🛎️ Copa</option>
+          <option value="farmacia">💊 Farmácia</option>
+          <option value="social">👩‍🏫 Serviço Social</option>
+          <option value="tec_enf">👩🏻‍⚕️ Téc. Enfermagem</option>
+          <option value="enfermeiro">🩺 Enfermeiros(as)</option>
+          <option value="medico">👨‍⚕️ Médicos Plantonistas</option>
+          <option value="fisio">🦺 Fisioterapeuta</option>
+        </select>
+        <input type="text" id="new-prof-nome" placeholder="Nome completo do profissional">
+        <button class="btn-add-prof" onclick="adicionarProfissional()">+ Adicionar</button>
+      </div>
+      <div class="prof-erro" id="prof-erro"></div>
     </div>
-    <div class="prof-erro" id="prof-erro"></div>
+    <div id="lista-profs-equipe"></div>
   </div>
-  <div id="lista-profs-equipe"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -860,8 +916,10 @@ window.salvar=salvar;
 // ===== LISTENER PLANTÕES =====
 onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
   plantoes=snap.docs.map(d=>d.data());
-  const panel=document.getElementById('panel-consultar');
-  if(panel.classList.contains('active')){
+  const panelConsultar=document.getElementById('panel-consultar');
+  const panelInicio=document.getElementById('panel-inicio');
+  if(panelInicio?.classList.contains('active')) renderInicio();
+  if(panelConsultar.classList.contains('active')){
     if(document.getElementById('view-categoria').style.display==='none') renderLista(plantoesFiltrados());
     else renderTabelaCat();
   }
@@ -1129,25 +1187,63 @@ window.exportarCatCSV=function(){
 
 // ===== SWITCH TAB =====
 window.switchTab=function(tab, semSenha){
-  if(tab==='equipe' && !semSenha){
-    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{
-      switchTab('equipe', true);
-    });
-    return;
+  if(tab==='gestao' && !semSenha){
+    // Gestão é livre — só Equipe dentro dela pede senha
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  const tabs={registrar:0,consultar:1,producao:2,dashboard:3,equipe:4};
-  document.querySelectorAll('.tab-btn')[tabs[tab]].classList.add('active');
-  document.getElementById('panel-'+tab).classList.add('active');
+  const tabs={inicio:0,registrar:1,consultar:2,producao:3,gestao:4};
+  const idx=tabs[tab];
+  if(idx!==undefined) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  const panel=document.getElementById('panel-'+tab);
+  if(panel) panel.classList.add('active');
+  if(tab==='inicio') renderInicio();
   if(tab==='consultar'){
     if(viewAtual==='lista') renderLista(plantoesFiltrados());
     else { document.getElementById('fi-cat').innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join(''); renderTabelaCat(); }
   }
-  if(tab==='producao'){ verificarBloqueio(); filtrarProducao(); }
-  if(tab==='dashboard') renderDashboard();
-  if(tab==='equipe'){ renderListaProfs(); }
+  if(tab==='producao'){ verificarBloqueio(); }
+  if(tab==='gestao'){ renderDashboard(); filtrarProducao(); }
 };
+
+window.switchGestao=function(sec){
+  ['dash','hist','equipe'].forEach(s=>{
+    document.getElementById('gtab-'+s).classList.toggle('active',s===sec);
+    document.getElementById('gsec-'+s).style.display=s===sec?'block':'none';
+  });
+  if(sec==='equipe'){
+    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{
+      renderListaProfs();
+    });
+  }
+  if(sec==='hist') filtrarProducao();
+};
+
+function renderInicio(){
+  // Próximo turno do dia
+  const hoje = new Date().toISOString().slice(0,10);
+  const plantaoHoje = plantoes.filter(r=>r.data===hoje);
+  const temDiurno  = plantaoHoje.some(r=>r.turno==='DIURNO');
+  const temNoturno = plantaoHoje.some(r=>r.turno==='NOTURNO');
+  let proximoTxt = '';
+  if(!temDiurno && !temNoturno) proximoTxt = '<span style="color:var(--amarelo);font-weight:600;">⚠️ Nenhum plantão registrado hoje ainda.</span>';
+  else if(!temDiurno) proximoTxt = '<span style="color:var(--verde);font-weight:600;">✅ Diurno pendente de registro.</span>';
+  else if(!temNoturno) proximoTxt = '<span style="color:var(--verde);font-weight:600;">✅ Noturno pendente de registro.</span>';
+  else proximoTxt = '<span style="color:var(--cinza);">✅ Ambos os turnos registrados hoje.</span>';
+  const el_turno = document.getElementById('inicio-proximo-turno');
+  if(el_turno) el_turno.innerHTML = `<div style="margin-bottom:6px;font-size:0.8rem;color:var(--cinza);">Hoje: ${hoje.split('-').reverse().join('/')}</div>${proximoTxt}<br><button onclick="switchTab('registrar')" style="margin-top:10px;padding:6px 14px;background:var(--azul);color:white;border:none;border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">✏️ Registrar Plantão</button>`;
+  // Último plantão
+  const ultimo = plantoes[0];
+  const el_ult = document.getElementById('inicio-ultimo-plantao');
+  if(el_ult){
+    if(!ultimo){ el_ult.innerHTML='<span style="color:var(--cinza);">Nenhum plantão registrado ainda.</span>'; }
+    else {
+      const [a,m,d]=ultimo.data.split('-');
+      const meds=(ultimo.equipe?.medico||[]).map(p=>abr(p.nome)).filter(Boolean).slice(0,2).join(' · ')||'—';
+      el_ult.innerHTML=`<div style="font-weight:700;font-size:1rem;color:var(--texto);margin-bottom:4px;">${d}/${m}/${a} — ${ultimo.turno}</div><div style="font-size:0.8rem;color:var(--cinza);">🩺 ${meds}</div><button onclick="switchTab('consultar')" style="margin-top:10px;padding:6px 14px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">📋 Ver todos</button>`;
+    }
+  }
+}
 
 // ===== PRODUÇÃO =====
 onSnapshot(query(collection(db,'producao'),orderBy('data','desc')),snap=>{
@@ -1338,7 +1434,7 @@ window.renderDashboard=function(){
       </div>
     </div>`;
   if(chartEv){chartEv.destroy();chartEv=null;} if(chartFichas){chartFichas.destroy();chartFichas=null;}
-  chartEv=new Chart(document.getElementById('ch-ev'),{type:'line',data:{labels:dados.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'☀':'☾'}`;}),datasets:[{label:'Atend.',data:dados.map(r=>r.total||0),borderColor:'#1B6CA8',backgroundColor:'rgba(27,108,168,0.1)',tension:0.3,fill:true,pointRadius:3},{label:'Intern.',data:dados.map(r=>r.internamento||0),borderColor:'#2E7D57',borderDash:[5,3],tension:0.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+  chartEv=new Chart(document.getElementById('ch-ev'),{type:'line',data:{labels:dados.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'D':'N'}`;}),datasets:[{label:'Atendimentos',data:dados.map(r=>r.total||0),borderColor:'#1B6CA8',backgroundColor:'rgba(27,108,168,0.1)',tension:0.3,fill:true,pointRadius:3},{label:'Internamentos',data:dados.map(r=>r.internamento||0),borderColor:'#2E7D57',borderDash:[5,3],tension:0.3,pointRadius:2,backgroundColor:'rgba(0,0,0,0)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:20,font:{size:11}}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
   chartFichas=new Chart(document.getElementById('ch-fichas'),{type:'bar',data:{labels:['🔵 Azul','🟢 Verde','🟡 Amarela','🟠 Laranja','🔴 Vermelha'],datasets:[{data:[azul,verd,amr,lar,verm],backgroundColor:['#3B82F6','#22C55E','#EAB308','#F97316','#EF4444'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
 };
 window.limparDashboard=function(){
