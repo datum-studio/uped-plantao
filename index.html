@@ -1094,7 +1094,8 @@ window.confirmarExclusao=async function(){
 // WHATSAPP
 function nomeWA(nome, catId) {
   const abreviado = abr(nome);
-  return catId === 'medico' ? `Dr. ${abreviado}` : abreviado;
+  const eMedico = catId === 'medico' || catId === 'evolucao' || catId === 'p3';
+  return eMedico ? `DR. ${abreviado}` : abreviado;
 }
 
 function gerarTextoWA(r) {
@@ -1173,7 +1174,6 @@ window.renderTabelaCat=function(){
         ${nomes.map(nome=>{
           let total=0;
           const cels=datas.map(data=>{
-            // Todos os plantões deste dia
             const plantoesNoDia=lista.filter(r=>r.data===data);
             let siglas=[];
             plantoesNoDia.forEach(r=>{
@@ -1184,7 +1184,15 @@ window.renderTabelaCat=function(){
                 (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
               }
             });
-            if(siglas.length){ total++; return `<td>${siglas.map(s=>`<span class="sigla-${s}">${s}</span>`).join(' ')}</td>`; }
+            if(cat.id==='p3'){
+              // P3: deduplica M+M → M e T+T → T (mesmo médico informado duas vezes)
+              siglas=[...new Set(siglas)];
+            }
+            if(siglas.length){
+              // Total = número de siglas distintas (D+N = 2 plantões distintos)
+              total+=siglas.length;
+              return `<td>${siglas.map(s=>`<span class="sigla-${s}">${s}</span>`).join(' ')}</td>`;
+            }
             return '<td style="color:var(--cinza-borda);">—</td>';
           }).join('');
           return `<tr><td class="td-nome" title="${nome}">${abr(nome)}</td>${cels}<td class="td-total">${total}</td></tr>`;
@@ -1223,7 +1231,8 @@ window.exportarCatCSV=function(){
           if(cat.id==='p3'){ if(r.equipe?.p3?.manha?.nome===nome) siglas.push('M'); if(r.equipe?.p3?.tarde?.nome===nome) siglas.push('T'); }
           else (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
         });
-        if(siglas.length){ total++; linha.push(siglas.join('+')); } else linha.push('');
+        if(cat.id==='p3') siglas=[...new Set(siglas)]; // deduplica M+M ou T+T
+        if(siglas.length){ total+=siglas.length; linha.push(siglas.join('+')); } else linha.push('');
       });
       linha.push(total); csv+=linha.join(';')+'\n';
     });
