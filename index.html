@@ -1136,7 +1136,7 @@ window.setView=function(v){
 
 window.renderTabelaCat=function(){
   const catFiltro=document.getElementById('fi-cat').value;
-  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data));
+  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
   const wrap=document.getElementById('tabela-cat-wrap');
   if(lista.length===0){ wrap.innerHTML='<div class="empty"><div class="big">📋</div><div>Nenhum plantão no período.</div></div>'; return; }
   const catsRender=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
@@ -1197,7 +1197,7 @@ window.renderTabelaCat=function(){
 
 window.exportarCatCSV=function(){
   const catFiltro=document.getElementById('fi-cat').value;
-  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data));
+  const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
   if(!lista.length){ toast('⚠️ Nenhum dado.','#E53E3E'); return; }
   const datas=[...new Set(lista.map(r=>r.data))].sort();
   const catsEx=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
@@ -1367,7 +1367,7 @@ window.salvarProducao=salvarProducao;
 
 function getProdFiltradas(){
   const ini=document.getElementById('rp-ini').value; const fim=document.getElementById('rp-fim').value; const trn=document.getElementById('rp-turno').value;
-  return producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data));
+  return producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
 }
 function filtrarProducao(){ const l=getProdFiltradas(); renderResumoProd(l); renderGraficoProd(l); renderHistProd(l); }
 window.filtrarProducao=filtrarProducao;
@@ -1426,7 +1426,7 @@ window.exportarProdCSV=window.exportarProdCSV;
 // ===== DASHBOARD =====
 window.renderDashboard=function(){
   const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value; const trn=document.getElementById('db-turno').value;
-  const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data));
+  const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
   const el=document.getElementById('dash-conteudo');
   if(!dados.length){ el.innerHTML='<div class="dash-vazio"><div class="big">📊</div><div>Nenhum dado no período.</div></div>'; return; }
   const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
