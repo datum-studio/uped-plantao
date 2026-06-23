@@ -933,6 +933,7 @@ async function salvar() {
     abrirModalConfirmacao(reg);
   } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Salvar Escala do Plantão'; }
 }
+window.salvar=salvar;
 function abrirModalConfirmacao(reg) {
   const [a,m,d]=reg.data.split('-');
   const ds=DIAS[new Date(reg.data+'T12:00:00').getDay()];
