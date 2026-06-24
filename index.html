@@ -807,7 +807,7 @@ function renderCatBody(catId) {
   body.innerHTML='';
   const ativos=profsAtivos(catId);
   if(ativos.length===0){
-    body.innerHTML=`<div class="sem-cadastro">⚠️ Nenhum profissional cadastrado nesta categoria.<br><small>Use "Gerenciar Profissionais" para adicionar.</small></div>`;
+    body.innerHTML=`<div class="sem-cadastro">⚠️ Nenhum profissional cadastrado nesta categoria.<br><small>Acesse <strong>Gestão &gt; Equipe</strong> para adicionar.</small></div>`;
     return;
   }
   (estado[catId]||[{nome:'',turno:turnoPlantao(),obs:''}]).forEach((slot,i)=>{
@@ -850,10 +850,20 @@ function atualizarSelectsP3() {
   });
 }
 
-function novoRegistro() {
+async function novoRegistro() {
   editKey=null;
+  const hoje = new Date().toISOString().slice(0,10);
   document.getElementById('f-data').valueAsDate=new Date();
-  document.getElementById('f-turno').value='NOTURNO';
+
+  // Turno inteligente: se Diurno ainda não foi registrado hoje, sugere Diurno
+  // Se Diurno já foi, sugere Noturno (ou se ambos foram, Noturno por padrão)
+  const temDiurno  = plantoes.some(r=>r.data===hoje && r.turno==='DIURNO');
+  const temNoturno = plantoes.some(r=>r.data===hoje && r.turno==='NOTURNO');
+  let turnoSugerido = 'NOTURNO';
+  if (!temDiurno) turnoSugerido = 'DIURNO';
+  else if (!temNoturno) turnoSugerido = 'NOTURNO';
+  document.getElementById('f-turno').value = turnoSugerido;
+
   document.getElementById('f-obs').value='';
   document.getElementById('p3m-nome').value='';
   document.getElementById('p3m-obs').value='';
