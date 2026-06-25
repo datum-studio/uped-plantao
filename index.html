@@ -466,6 +466,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
     <button class="btn-view active" id="gtab-dash" onclick="switchGestao('dash')">📈 Dashboard</button>
     <button class="btn-view" id="gtab-hist" onclick="switchGestao('hist')">📊 Histórico de Produção</button>
+    <button class="btn-view" id="gtab-censo" onclick="switchGestao('censo')">🏥 Censo do Plantão</button>
     <button class="btn-view" id="gtab-equipe" onclick="switchGestao('equipe')">👥 Equipe</button>
   </div>
 
@@ -506,6 +507,66 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
         <div style="position:relative;width:100%;height:200px;"><canvas id="chart-prod"></canvas></div>
       </div>
       <div id="lista-prod"></div>
+    </div>
+  </div>
+
+  <!-- Censo do Plantão -->
+  <div id="gsec-censo" style="display:none;">
+    <div class="card" id="card-censo">
+      <div class="card-title" style="display:block;">🏥 Censo do Plantão — Passagem</div>
+      <div class="form-row" style="margin-bottom:14px;">
+        <div class="form-group"><label>Data</label><input type="date" id="cs-data"></div>
+        <div class="form-group">
+          <label>Turno</label>
+          <select id="cs-turno">
+            <option value="DIURNO">☀️ Diurno</option>
+            <option value="NOTURNO" selected>🌙 Noturno</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="censo-aviso" class="prod-bloqueado" style="display:none;">
+        <span>🔒</span><span id="censo-aviso-txt"></span>
+        <button class="btn-editar-prod" onclick="editarCenso()">✏️ Editar</button>
+      </div>
+
+      <!-- Internados por enfermaria -->
+      <div style="font-size:0.75rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🛏️ Pacientes Internados</div>
+      <div class="prod-grid" id="censo-campos-internados">
+        <div class="prod-item"><label>🐠 Geral (Nemo)</label><input type="number" id="cs-nemo" min="0" value="0"></div>
+        <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
+        <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
+      </div>
+      <div class="total-box" style="margin-bottom:14px;">
+        <span class="label">Total de Internados</span>
+        <span class="valor" id="cs-total-internados">0</span>
+      </div>
+
+      <!-- Situação clínica -->
+      <div style="font-size:0.75rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚕️ Situação Clínica</div>
+      <div class="prod-grid" id="censo-campos-clinica">
+        <div class="prod-item"><label>⏳ Aguardando Regulação</label><input type="number" id="cs-regulacao" min="0" value="0"></div>
+        <div class="prod-item"><label>💨 Intubados</label><input type="number" id="cs-intubados" min="0" value="0"></div>
+        <div class="prod-item"><label>🫁 CPAP</label><input type="number" id="cs-cpap" min="0" value="0"></div>
+        <div class="prod-item"><label>😷 VNI</label><input type="number" id="cs-vni" min="0" value="0"></div>
+        <div class="prod-item"><label>🚨 Isolamento</label><input type="number" id="cs-isolamento" min="0" value="0"></div>
+      </div>
+
+      <button class="btn-salvar" id="btn-salvar-censo" onclick="salvarCenso()">💾 Registrar Censo</button>
+    </div>
+
+    <!-- Histórico censo -->
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span>📋 Histórico de Censo</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rc-ini"></div>
+          <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rc-fim"></div>
+          <button class="btn-filtrar" onclick="filtrarCenso()" style="margin-bottom:0">🔍</button>
+          <button class="btn-limpar" onclick="limparCenso()" style="margin-bottom:0">✕</button>
+        </div>
+      </div>
+      <div id="lista-censo"></div>
     </div>
   </div>
 
@@ -1275,18 +1336,19 @@ window.switchTab=function(tab, semSenha){
 };
 
 window.switchGestao=function(sec){
-  ['dash','hist','equipe'].forEach(s=>{
-    document.getElementById('gtab-'+s).classList.toggle('active',s===sec);
-    document.getElementById('gsec-'+s).style.display=s===sec?'block':'none';
+  ['dash','hist','censo','equipe'].forEach(s=>{
+    const tab=document.getElementById('gtab-'+s);
+    const gsec=document.getElementById('gsec-'+s);
+    if(tab) tab.classList.toggle('active',s===sec);
+    if(gsec) gsec.style.display=s===sec?'block':'none';
   });
-  aplicarPeriodoPadrao(); // garante datas preenchidas
+  aplicarPeriodoPadrao();
   if(sec==='equipe'){
-    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{
-      renderListaProfs();
-    });
+    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{ renderListaProfs(); });
   }
   if(sec==='dash') renderDashboard();
   if(sec==='hist') filtrarProducao();
+  if(sec==='censo'){ verificarBloqueoCenso(); filtrarCenso(); }
 };
 
 function renderInicio(){
@@ -1535,10 +1597,135 @@ function limparProd(){
 }
 window.limparProd=limparProd;
 
+// ===== CENSO DO PLANTÃO =====
+const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha'];
+const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','isolamento'];
+const CAMPOS_CENSO      = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
+const LABELS_CENSO = {
+  nemo:'🐠 Geral (Nemo)', dory:'🐟 Respiratória (Dory)', vermelha:'🔴 Sala Vermelha',
+  regulacao:'⏳ Ag. Regulação', intubados:'💨 Intubados',
+  cpap:'🫁 CPAP', vni:'😷 VNI', isolamento:'🚨 Isolamento'
+};
+
+let censos = [];
+
+onSnapshot(collection(db,'censo'), snap=>{
+  censos = snap.docs.map(d=>({...d.data(),key:d.id}))
+    .sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+  if(document.getElementById('gsec-censo')?.style.display!=='none') {
+    verificarBloqueoCenso();
+    filtrarCenso();
+  }
+});
+
+CAMPOS_CENSO_INT.forEach(c=>{
+  const el=document.getElementById('cs-'+c);
+  if(el) el.addEventListener('input', calcTotalInternados);
+});
+function calcTotalInternados(){
+  document.getElementById('cs-total-internados').textContent =
+    CAMPOS_CENSO_INT.reduce((s,c)=>s+(parseInt(document.getElementById('cs-'+c).value)||0),0);
+}
+
+function chaveCenso(){ const d=document.getElementById('cs-data').value; const t=document.getElementById('cs-turno').value; return d&&t?d+'_'+t:null; }
+
+async function verificarBloqueoCenso(){
+  const chave=chaveCenso(); if(!chave) return;
+  const snap=await getDoc(doc(db,'censo',chave));
+  const aviso=document.getElementById('censo-aviso');
+  const campos=document.querySelectorAll('#censo-campos-internados input,#censo-campos-clinica input');
+  const btn=document.getElementById('btn-salvar-censo');
+  if(snap.exists()){
+    const d=snap.data();
+    aviso.style.display='flex';
+    document.getElementById('censo-aviso-txt').textContent=`Censo registrado em ${new Date(d.registradoEm).toLocaleString('pt-BR')}${d.editadoEm?' · editado em '+new Date(d.editadoEm).toLocaleString('pt-BR'):''}. Bloqueado.`;
+    campos.forEach(el=>el.disabled=true); btn.disabled=true;
+    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c); if(el) el.value=d[c]||0; });
+    calcTotalInternados();
+  } else {
+    aviso.style.display='none';
+    campos.forEach(el=>el.disabled=false); btn.disabled=false;
+    btn.textContent='💾 Registrar Censo';
+    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c); if(el) el.value=0; });
+    calcTotalInternados();
+  }
+}
+document.getElementById('cs-data').addEventListener('change', verificarBloqueoCenso);
+document.getElementById('cs-turno').addEventListener('change', verificarBloqueoCenso);
+
+window.editarCenso=()=>{
+  abrirSenha('✏️ Editar Censo','Informe a senha de supervisor para editar este registro.',()=>{
+    const campos=document.querySelectorAll('#censo-campos-internados input,#censo-campos-clinica input');
+    campos.forEach(el=>el.disabled=false);
+    document.getElementById('btn-salvar-censo').disabled=false;
+    document.getElementById('btn-salvar-censo').textContent='💾 Salvar Edição';
+    document.getElementById('censo-aviso-txt').textContent='✏️ Modo edição — salve ao concluir.';
+    toast('🔓 Edição liberada.','#F59E0B');
+  });
+};
+
+window.salvarCenso=async function(){
+  const chave=chaveCenso(); if(!chave){ toast('⚠️ Selecione data e turno.','#E53E3E'); return; }
+  const dados={key:chave, data:document.getElementById('cs-data').value, turno:document.getElementById('cs-turno').value};
+  CAMPOS_CENSO.forEach(c=>{ dados[c]=parseInt(document.getElementById('cs-'+c).value)||0; });
+  dados.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dados[c],0);
+  const jaExiste=(await getDoc(doc(db,'censo',chave))).exists();
+  if(jaExiste) dados.editadoEm=new Date().toISOString();
+  else dados.registradoEm=new Date().toISOString();
+  const btn=document.getElementById('btn-salvar-censo'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    await setDoc(doc(db,'censo',chave),dados);
+    toast('✅ Censo registrado!');
+    // Avança turno
+    const dt=document.getElementById('cs-data').value; const tr=document.getElementById('cs-turno').value;
+    if(tr==='NOTURNO'){ const d=new Date(dt+'T12:00:00'); d.setDate(d.getDate()+1); document.getElementById('cs-data').value=d.toISOString().slice(0,10); document.getElementById('cs-turno').value='DIURNO'; }
+    else document.getElementById('cs-turno').value='NOTURNO';
+    await verificarBloqueoCenso();
+  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Registrar Censo'; }
+};
+
+function getCensoFiltrados(){
+  const ini=document.getElementById('rc-ini').value; const fim=document.getElementById('rc-fim').value;
+  return censos.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; });
+}
+window.filtrarCenso=function(){ renderHistCenso(getCensoFiltrados()); };
+window.limparCenso=function(){
+  const {ini,fim}=periodoUltimoMes();
+  document.getElementById('rc-ini').valueAsDate=ini;
+  document.getElementById('rc-fim').valueAsDate=fim;
+  filtrarCenso();
+};
+
+function renderHistCenso(l){
+  const el=document.getElementById('lista-censo');
+  if(!l.length){ el.innerHTML='<div class="empty"><div class="big">🏥</div><div>Nenhum censo registrado ainda.</div></div>'; return; }
+  el.innerHTML=[...l].reverse().map(r=>{
+    const[a,m,d]=r.data.split('-');
+    const itensInt=CAMPOS_CENSO_INT.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_CENSO[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+    const itensClin=CAMPOS_CENSO_CLIN.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_CENSO[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+    return `<div class="prod-hist-card">
+      <div class="prod-hist-header" onclick="toggleProdCard(this)">
+        <span>${d}/${m}/${a}</span>
+        <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'☀️':'🌙'} ${r.turno}</span>
+        ${r.editadoEm?'<span class="editado-badge">editado</span>':''}
+        <span style="margin-left:auto;font-size:0.78rem;background:var(--azul);color:white;padding:2px 9px;border-radius:20px;font-weight:700;">${r.totalInternados||0} internados</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="prod-hist-body">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;margin-bottom:6px;">Internados</div>
+        <div class="prod-num-grid">${itensInt}</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;margin:10px 0 6px;">Situação Clínica</div>
+        <div class="prod-num-grid">${itensClin}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ===== INIT =====
 document.getElementById('footer-ano').textContent=new Date().getFullYear();
 document.getElementById('f-data').valueAsDate=new Date();
 document.getElementById('fp-data').valueAsDate=new Date();
+document.getElementById('cs-data').valueAsDate=new Date();
 
 function periodoUltimoMes() {
   const fim=new Date(); const ini=new Date(); ini.setDate(ini.getDate()-30);
@@ -1546,8 +1733,8 @@ function periodoUltimoMes() {
 }
 function aplicarPeriodoPadrao() {
   const {ini,fim}=periodoUltimoMes();
-  ['db-ini','rp-ini'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=ini; });
-  ['db-fim','rp-fim'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=fim; });
+  ['db-ini','rp-ini','rc-ini'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=ini; });
+  ['db-fim','rp-fim','rc-fim'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=fim; });
 }
 aplicarPeriodoPadrao();
 
