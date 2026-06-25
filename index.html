@@ -329,9 +329,14 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     </div>
   </div>
   <!-- Resumo do dia -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="inicio-resumo">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;" id="inicio-resumo">
     <div class="card"><div class="card-title" style="display:block;">📅 Último Plantão Registrado</div><div id="inicio-ultimo-plantao" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
     <div class="card"><div class="card-title" style="display:block;">⏰ Próximo Turno do Dia</div><div id="inicio-proximo-turno" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
+  </div>
+  <!-- Card último censo -->
+  <div class="card" id="card-inicio-censo">
+    <div class="card-title" style="display:block;">🏥 Último Censo Registrado</div>
+    <div id="inicio-ultimo-censo" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div>
   </div>
 </div>
 <div class="tab-panel" id="panel-registrar">
@@ -377,6 +382,38 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     <div class="card-title" style="display:block;">📝 Observações gerais do plantão</div>
     <textarea id="f-obs" placeholder="Ex: profissional chegando às 21h, substituição..." style="width:100%;min-height:65px;resize:vertical;border:1.5px solid var(--cinza-borda);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:0.87rem;"></textarea>
   </div>
+
+  <!-- CENSO DO PLANTÃO no Registrar -->
+  <div class="card" style="margin-bottom:14px;" id="card-censo-reg">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>🏥 Censo do Plantão</span>
+      <span style="font-size:0.72rem;font-weight:400;color:var(--cinza);">Salvo separadamente ao clicar em Registrar Censo</span>
+    </div>
+    <div id="censo-aviso" class="prod-bloqueado" style="display:none;">
+      <span>🔒</span><span id="censo-aviso-txt"></span>
+      <button class="btn-editar-prod" onclick="editarCenso()">✏️ Editar</button>
+    </div>
+    <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🛏️ Pacientes Internados</div>
+    <div class="prod-grid" id="censo-campos-internados">
+      <div class="prod-item"><label>🐠 Geral (Nemo)</label><input type="number" id="cs-nemo" min="0" value="0"></div>
+      <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
+      <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
+    </div>
+    <div class="total-box" style="margin-bottom:14px;">
+      <span class="label">Total de Internados</span>
+      <span class="valor" id="cs-total-internados">0</span>
+    </div>
+    <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚕️ Situação Clínica</div>
+    <div class="prod-grid" id="censo-campos-clinica">
+      <div class="prod-item"><label>⏳ Ag. Regulação</label><input type="number" id="cs-regulacao" min="0" value="0"></div>
+      <div class="prod-item"><label>💨 Intubados</label><input type="number" id="cs-intubados" min="0" value="0"></div>
+      <div class="prod-item"><label>🫁 CPAP</label><input type="number" id="cs-cpap" min="0" value="0"></div>
+      <div class="prod-item"><label>😷 VNI</label><input type="number" id="cs-vni" min="0" value="0"></div>
+      <div class="prod-item"><label>🚨 Isolamento</label><input type="number" id="cs-isolamento" min="0" value="0"></div>
+    </div>
+    <button class="btn-salvar" id="btn-salvar-censo" onclick="salvarCenso()" style="background:var(--verde);">🏥 Registrar Censo</button>
+  </div>
+
   <button class="btn-salvar" id="btn-salvar" onclick="salvar()">💾 Salvar Escala do Plantão</button>
   <div class="msg-edit" id="msg-edit"></div>
 </div>
@@ -481,6 +518,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       </div>
       <button class="btn-filtrar" onclick="renderDashboard()">🔍 Aplicar</button>
       <button class="btn-limpar" onclick="limparDashboard()">✕</button>
+      <button class="btn-exportar" onclick="exportarPDFDashboard()">⬇️ PDF</button>
     </div>
     <div id="dash-conteudo"><div class="dash-vazio"><div class="big">📈</div><div>Carregando...</div></div></div>
   </div>
@@ -499,6 +537,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
           <button class="btn-filtrar" onclick="filtrarProducao()" style="margin-bottom:0">🔍</button>
           <button class="btn-limpar" onclick="limparProd()" style="margin-bottom:0">✕</button>
           <button class="btn-exportar" onclick="exportarProdCSV()">⬇️ CSV</button>
+          <button class="btn-exportar" onclick="exportarPDFProd()" style="background:#1B6CA8;">⬇️ PDF</button>
         </div>
       </div>
       <div class="resumo-grid" id="resumo-prod"></div>
@@ -512,58 +551,15 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
   <!-- Censo do Plantão -->
   <div id="gsec-censo" style="display:none;">
-    <div class="card" id="card-censo">
-      <div class="card-title" style="display:block;">🏥 Censo do Plantão — Passagem</div>
-      <div class="form-row" style="margin-bottom:14px;">
-        <div class="form-group"><label>Data</label><input type="date" id="cs-data"></div>
-        <div class="form-group">
-          <label>Turno</label>
-          <select id="cs-turno">
-            <option value="DIURNO">☀️ Diurno</option>
-            <option value="NOTURNO" selected>🌙 Noturno</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="censo-aviso" class="prod-bloqueado" style="display:none;">
-        <span>🔒</span><span id="censo-aviso-txt"></span>
-        <button class="btn-editar-prod" onclick="editarCenso()">✏️ Editar</button>
-      </div>
-
-      <!-- Internados por enfermaria -->
-      <div style="font-size:0.75rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🛏️ Pacientes Internados</div>
-      <div class="prod-grid" id="censo-campos-internados">
-        <div class="prod-item"><label>🐠 Geral (Nemo)</label><input type="number" id="cs-nemo" min="0" value="0"></div>
-        <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
-        <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
-      </div>
-      <div class="total-box" style="margin-bottom:14px;">
-        <span class="label">Total de Internados</span>
-        <span class="valor" id="cs-total-internados">0</span>
-      </div>
-
-      <!-- Situação clínica -->
-      <div style="font-size:0.75rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚕️ Situação Clínica</div>
-      <div class="prod-grid" id="censo-campos-clinica">
-        <div class="prod-item"><label>⏳ Aguardando Regulação</label><input type="number" id="cs-regulacao" min="0" value="0"></div>
-        <div class="prod-item"><label>💨 Intubados</label><input type="number" id="cs-intubados" min="0" value="0"></div>
-        <div class="prod-item"><label>🫁 CPAP</label><input type="number" id="cs-cpap" min="0" value="0"></div>
-        <div class="prod-item"><label>😷 VNI</label><input type="number" id="cs-vni" min="0" value="0"></div>
-        <div class="prod-item"><label>🚨 Isolamento</label><input type="number" id="cs-isolamento" min="0" value="0"></div>
-      </div>
-
-      <button class="btn-salvar" id="btn-salvar-censo" onclick="salvarCenso()">💾 Registrar Censo</button>
-    </div>
-
-    <!-- Histórico censo -->
-    <div class="card" style="margin-top:14px;">
+    <div class="card">
       <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <span>📋 Histórico de Censo</span>
+        <span>🏥 Compilado de Censo</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
           <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rc-ini"></div>
           <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rc-fim"></div>
           <button class="btn-filtrar" onclick="filtrarCenso()" style="margin-bottom:0">🔍</button>
           <button class="btn-limpar" onclick="limparCenso()" style="margin-bottom:0">✕</button>
+          <button class="btn-exportar" onclick="exportarPDFCenso()" style="margin-bottom:0">⬇️ PDF</button>
         </div>
       </div>
       <div id="lista-censo"></div>
@@ -977,6 +973,7 @@ async function carregarPlantao() {
     });
   }
   rebuildarForm();
+  verificarBloqueoCenso(); // sincroniza censo com data/turno selecionados
 }
 
 document.getElementById('f-data').addEventListener('change',  carregarPlantao);
@@ -1352,7 +1349,6 @@ window.switchGestao=function(sec){
 };
 
 function renderInicio(){
-  // Próximo turno do dia
   const hoje = new Date().toISOString().slice(0,10);
   const plantaoHoje = plantoes.filter(r=>r.data===hoje);
   const temDiurno  = plantaoHoje.some(r=>r.turno==='DIURNO');
@@ -1364,7 +1360,6 @@ function renderInicio(){
   else proximoTxt = '<span style="color:var(--cinza);">✅ Ambos os turnos registrados hoje.</span>';
   const el_turno = document.getElementById('inicio-proximo-turno');
   if(el_turno) el_turno.innerHTML = `<div style="margin-bottom:6px;font-size:0.8rem;color:var(--cinza);">Hoje: ${hoje.split('-').reverse().join('/')}</div>${proximoTxt}<br><button onclick="switchTab('registrar')" style="margin-top:10px;padding:6px 14px;background:var(--azul);color:white;border:none;border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">✏️ Registrar Plantão</button>`;
-  // Último plantão
   const ultimo = plantoes[0];
   const el_ult = document.getElementById('inicio-ultimo-plantao');
   if(el_ult){
@@ -1375,7 +1370,108 @@ function renderInicio(){
       el_ult.innerHTML=`<div style="font-weight:700;font-size:1rem;color:var(--texto);margin-bottom:4px;">${d}/${m}/${a} — ${ultimo.turno}</div><div style="font-size:0.8rem;color:var(--cinza);">🩺 ${meds}</div><button onclick="switchTab('consultar')" style="margin-top:10px;padding:6px 14px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">📋 Ver todos</button>`;
     }
   }
+  // Card último censo
+  const el_censo = document.getElementById('inicio-ultimo-censo');
+  if(el_censo){
+    const ultimoCenso = censos.length ? censos[censos.length-1] : null;
+    if(!ultimoCenso){ el_censo.innerHTML='<span style="color:var(--cinza);">Nenhum censo registrado ainda.</span>'; }
+    else {
+      const [a,m,d]=ultimoCenso.data.split('-');
+      const turnoIcon = ultimoCenso.turno==='DIURNO'?'☀️':'🌙';
+      el_censo.innerHTML=`
+        <div style="font-size:0.82rem;color:var(--cinza);margin-bottom:10px;">${d}/${m}/${a} ${turnoIcon} ${ultimoCenso.turno}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">
+          <div style="background:var(--azul-claro);border-radius:8px;padding:10px 12px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:700;color:var(--azul);">${ultimoCenso.totalInternados||0}</div>
+            <div style="font-size:0.72rem;color:var(--cinza);margin-top:2px;">Total Internados</div>
+          </div>
+          <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
+            <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Enfermarias</div>
+            <div style="font-size:0.82rem;">🐠 Nemo: <b>${ultimoCenso.nemo||0}</b></div>
+            <div style="font-size:0.82rem;">🐟 Dory: <b>${ultimoCenso.dory||0}</b></div>
+            <div style="font-size:0.82rem;">🔴 Sala Verm.: <b>${ultimoCenso.vermelha||0}</b></div>
+          </div>
+          <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
+            <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Situação Clínica</div>
+            <div style="font-size:0.82rem;">⏳ Regulação: <b>${ultimoCenso.regulacao||0}</b></div>
+            <div style="font-size:0.82rem;">💨 Intubados: <b>${ultimoCenso.intubados||0}</b></div>
+            <div style="font-size:0.82rem;">🫁 CPAP: <b>${ultimoCenso.cpap||0}</b> · 😷 VNI: <b>${ultimoCenso.vni||0}</b></div>
+            <div style="font-size:0.82rem;">🚨 Isolamento: <b>${ultimoCenso.isolamento||0}</b></div>
+          </div>
+        </div>`;
+    }
+  }
 }
+
+// ===== PDFs =====
+function gerarPDF(titulo, conteudoHTML) {
+  const janela = window.open('','_blank');
+  janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>${titulo}</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; color:#1E293B; padding:24px; font-size:12px; }
+    h1 { font-size:16px; color:#1B6CA8; margin-bottom:4px; }
+    .sub { font-size:11px; color:#64748B; margin-bottom:20px; }
+    table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+    th { background:#1B6CA8; color:white; padding:7px 10px; text-align:left; font-size:11px; }
+    td { padding:6px 10px; border-bottom:1px solid #CBD5E1; font-size:11px; }
+    tr:nth-child(even) td { background:#F0F4F8; }
+    .secao { font-size:11px; font-weight:700; color:#1B6CA8; text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+    .kpi { background:#E8F1FA; border-radius:6px; padding:8px 10px; }
+    .kpi-val { font-size:20px; font-weight:700; color:#1B6CA8; }
+    .kpi-label { font-size:10px; color:#64748B; }
+    @media print { body { padding:12px; } }
+  </style></head><body>
+  <h1>UPED · Sistema de Plantão</h1>
+  <div class="sub">${titulo} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+  ${conteudoHTML}
+  <script>window.onload=()=>{ window.print(); }<\/script>
+  </body></html>`);
+  janela.document.close();
+}
+
+window.exportarPDFDashboard=function(){
+  const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value;
+  const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; })
+    .sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+  if(!dados.length){ toast('⚠️ Nenhum dado no período.','#E53E3E'); return; }
+  const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+  const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+  const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+  const html=`
+    <div class="secao">Período: ${per}</div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-val">${dados.length}</div><div class="kpi-label">Plantões</div></div>
+      <div class="kpi"><div class="kpi-val">${s('total')}</div><div class="kpi-label">Atendimentos</div></div>
+      <div class="kpi"><div class="kpi-val">${s('internamento')}</div><div class="kpi-label">Internamentos</div></div>
+      <div class="kpi"><div class="kpi-val">${s('transferencia')}</div><div class="kpi-label">Transferências</div></div>
+      <div class="kpi"><div class="kpi-val">${s('obito')}</div><div class="kpi-label">Óbitos</div></div>
+      <div class="kpi"><div class="kpi-val">${dados.length?Math.round(s('total')/dados.length):0}</div><div class="kpi-label">Média/plantão</div></div>
+    </div>
+    <div class="secao">Detalhamento por plantão</div>
+    <table><thead><tr><th>Data</th><th>Turno</th><th>Atend.</th><th>Intern.</th><th>Transf.</th><th>Óbitos</th><th>Gripais</th></tr></thead>
+    <tbody>${dados.map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.total||0}</td><td>${r.internamento||0}</td><td>${r.transferencia||0}</td><td>${r.obito||0}</td><td>${r.gripais||0}</td></tr>`).join('')}</tbody></table>`;
+  gerarPDF('Dashboard de Produção',html);
+};
+
+window.exportarPDFProd=function(){
+  window.exportarPDFDashboard(); // mesmos dados
+};
+
+window.exportarPDFCenso=function(){
+  const ini=document.getElementById('rc-ini').value; const fim=document.getElementById('rc-fim').value;
+  const dados=censos.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; });
+  if(!dados.length){ toast('⚠️ Nenhum censo no período.','#E53E3E'); return; }
+  const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+  const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+  const html=`
+    <div class="secao">Período: ${per}</div>
+    <table><thead><tr><th>Data</th><th>Turno</th><th>Nemo</th><th>Dory</th><th>S.Verm.</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Isolamento</th></tr></thead>
+    <tbody>${[...dados].reverse().map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.nemo||0}</td><td>${r.dory||0}</td><td>${r.vermelha||0}</td><td><b>${r.totalInternados||0}</b></td><td>${r.regulacao||0}</td><td>${r.intubados||0}</td><td>${r.cpap||0}</td><td>${r.vni||0}</td><td>${r.isolamento||0}</td></tr>`).join('')}</tbody></table>`;
+  gerarPDF('Compilado de Censo do Plantão',html);
+};
 
 // ===== PRODUÇÃO =====
 onSnapshot(query(collection(db,'producao'),orderBy('data','desc')),snap=>{
@@ -1612,6 +1708,7 @@ let censos = [];
 onSnapshot(collection(db,'censo'), snap=>{
   censos = snap.docs.map(d=>({...d.data(),key:d.id}))
     .sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+  if(document.getElementById('panel-inicio')?.classList.contains('active')) renderInicio();
   if(document.getElementById('gsec-censo')?.style.display!=='none') {
     verificarBloqueoCenso();
     filtrarCenso();
@@ -1627,7 +1724,12 @@ function calcTotalInternados(){
     CAMPOS_CENSO_INT.reduce((s,c)=>s+(parseInt(document.getElementById('cs-'+c).value)||0),0);
 }
 
-function chaveCenso(){ const d=document.getElementById('cs-data').value; const t=document.getElementById('cs-turno').value; return d&&t?d+'_'+t:null; }
+function chaveCenso(){
+  // O censo usa a mesma data/turno do formulário de Registrar Plantão
+  const d=document.getElementById('f-data').value;
+  const t=document.getElementById('f-turno').value;
+  return d&&t?d+'_'+t:null;
+}
 
 async function verificarBloqueoCenso(){
   const chave=chaveCenso(); if(!chave) return;
@@ -1650,8 +1752,8 @@ async function verificarBloqueoCenso(){
     calcTotalInternados();
   }
 }
-document.getElementById('cs-data').addEventListener('change', verificarBloqueoCenso);
-document.getElementById('cs-turno').addEventListener('change', verificarBloqueoCenso);
+// Censo sincroniza com f-data/f-turno do formulário principal
+// (verificarBloqueoCenso é chamado por carregarPlantao)
 
 window.editarCenso=()=>{
   abrirSenha('✏️ Editar Censo','Informe a senha de supervisor para editar este registro.',()=>{
@@ -1665,8 +1767,12 @@ window.editarCenso=()=>{
 };
 
 window.salvarCenso=async function(){
-  const chave=chaveCenso(); if(!chave){ toast('⚠️ Selecione data e turno.','#E53E3E'); return; }
-  const dados={key:chave, data:document.getElementById('cs-data').value, turno:document.getElementById('cs-turno').value};
+  const chave=chaveCenso(); if(!chave){ toast('⚠️ Selecione data e turno no formulário acima.','#E53E3E'); return; }
+  const dados={
+    key:chave,
+    data:document.getElementById('f-data').value,
+    turno:document.getElementById('f-turno').value
+  };
   CAMPOS_CENSO.forEach(c=>{ dados[c]=parseInt(document.getElementById('cs-'+c).value)||0; });
   dados.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dados[c],0);
   const jaExiste=(await getDoc(doc(db,'censo',chave))).exists();
@@ -1676,12 +1782,8 @@ window.salvarCenso=async function(){
   try{
     await setDoc(doc(db,'censo',chave),dados);
     toast('✅ Censo registrado!');
-    // Avança turno
-    const dt=document.getElementById('cs-data').value; const tr=document.getElementById('cs-turno').value;
-    if(tr==='NOTURNO'){ const d=new Date(dt+'T12:00:00'); d.setDate(d.getDate()+1); document.getElementById('cs-data').value=d.toISOString().slice(0,10); document.getElementById('cs-turno').value='DIURNO'; }
-    else document.getElementById('cs-turno').value='NOTURNO';
     await verificarBloqueoCenso();
-  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Registrar Censo'; }
+  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='🏥 Registrar Censo'; }
 };
 
 function getCensoFiltrados(){
@@ -1725,7 +1827,6 @@ function renderHistCenso(l){
 document.getElementById('footer-ano').textContent=new Date().getFullYear();
 document.getElementById('f-data').valueAsDate=new Date();
 document.getElementById('fp-data').valueAsDate=new Date();
-document.getElementById('cs-data').valueAsDate=new Date();
 
 function periodoUltimoMes() {
   const fim=new Date(); const ini=new Date(); ini.setDate(ini.getDate()-30);
