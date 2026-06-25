@@ -414,7 +414,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     <button class="btn-salvar" id="btn-salvar-censo" onclick="salvarCenso()" style="background:var(--verde);">🏥 Registrar Censo</button>
   </div>
 
-  <button class="btn-salvar" id="btn-salvar" onclick="salvar()">💾 Salvar Escala do Plantão</button>
+  <button class="btn-salvar" id="btn-salvar" onclick="salvar()">💾 Registrar Plantão</button>
   <div class="msg-edit" id="msg-edit"></div>
 </div>
 
@@ -929,7 +929,7 @@ async function novoRegistro() {
   document.getElementById('msg-edit').textContent='';
   const btn=document.getElementById('btn-salvar');
   btn.disabled=false;
-  btn.textContent='💾 Salvar Escala do Plantão';
+  btn.textContent='💾 Registrar Plantão';
   initEstado(); rebuildarForm();
 }
 window.novoRegistro=novoRegistro;
@@ -964,7 +964,7 @@ async function carregarPlantao() {
     document.getElementById('p3t-nome').value = '';
     document.getElementById('p3t-obs').value  = '';
     document.getElementById('msg-edit').textContent = '';
-    document.getElementById('btn-salvar').textContent = '💾 Salvar Escala do Plantão';
+    document.getElementById('btn-salvar').textContent = '💾 Registrar Plantão';
     // Reseta estado — slots vazios recebem o turno atual do plantão
     initEstado();
     // Slots com nome preservam o turno escolhido; slots vazios recebem o novo turno
@@ -999,7 +999,7 @@ async function salvar() {
   try {
     await setDoc(doc(db,'plantoes',key),reg);
     abrirModalConfirmacao(reg);
-  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Salvar Escala do Plantão'; }
+  } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Registrar Plantão'; }
 }
 window.salvar=salvar;
 function abrirModalConfirmacao(reg) {
@@ -1434,30 +1434,66 @@ function gerarPDF(titulo, conteudoHTML) {
 
 window.exportarPDFDashboard=function(){
   const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value;
-  const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; })
-    .sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+  const trn=document.getElementById('db-turno').value;
+  const dados=producoes.filter(r=>{
+    if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false;
+    if(trn&&r.turno!==trn)return false; return true;
+  }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+  if(!dados.length){ toast('⚠️ Nenhum dado no período.','#E53E3E'); return; }
+  const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+  const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+  const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+  const pGrav=s('total')?Math.round((s('vermelha')+s('laranja'))/s('total')*100):0;
+  const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
+  const html=`
+    <div class="secao">Período: ${per}${trn?' · '+trn:''}</div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-val">${dados.length}</div><div class="kpi-label">Plantões (${diu.length}D / ${not.length}N)</div></div>
+      <div class="kpi"><div class="kpi-val">${s('total')}</div><div class="kpi-label">Total de Atendimentos</div></div>
+      <div class="kpi"><div class="kpi-val">${dados.length?Math.round(s('total')/dados.length):0}</div><div class="kpi-label">Média por Plantão</div></div>
+      <div class="kpi"><div class="kpi-val">${pGrav}%</div><div class="kpi-label">Gravidade Alta (🟠+🔴)</div></div>
+      <div class="kpi"><div class="kpi-val">${s('internamento')}</div><div class="kpi-label">Internamentos</div></div>
+      <div class="kpi"><div class="kpi-val">${s('transferencia')}</div><div class="kpi-label">Transferências</div></div>
+      <div class="kpi"><div class="kpi-val">${s('obito')}</div><div class="kpi-label">Óbitos</div></div>
+      <div class="kpi"><div class="kpi-val">${s('gripais')}</div><div class="kpi-label">Sint. Gripais</div></div>
+    </div>
+    <div class="secao">Distribuição por tipo de ficha</div>
+    <table><thead><tr><th>Ficha</th><th>Quantidade</th><th>% do total</th></tr></thead>
+    <tbody>
+      ${[['🔵 Azul','azul'],['🟢 Verde','verde'],['🟡 Amarela','amarela'],['🟠 Laranja','laranja'],['🔴 Vermelha','vermelha']].map(([l,c])=>`<tr><td>${l}</td><td>${s(c)}</td><td>${s('total')?Math.round(s(c)/s('total')*100):0}%</td></tr>`).join('')}
+    </tbody></table>`;
+  gerarPDF('Dashboard Gerencial — UPED',html);
+};
+
+window.exportarPDFProd=function(){
+  const ini=document.getElementById('rp-ini').value; const fim=document.getElementById('rp-fim').value;
+  const trn=document.getElementById('rp-turno').value;
+  const dados=producoes.filter(r=>{
+    if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false;
+    if(trn&&r.turno!==trn)return false; return true;
+  }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
   if(!dados.length){ toast('⚠️ Nenhum dado no período.','#E53E3E'); return; }
   const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
   const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
   const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
   const html=`
-    <div class="secao">Período: ${per}</div>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-val">${dados.length}</div><div class="kpi-label">Plantões</div></div>
-      <div class="kpi"><div class="kpi-val">${s('total')}</div><div class="kpi-label">Atendimentos</div></div>
-      <div class="kpi"><div class="kpi-val">${s('internamento')}</div><div class="kpi-label">Internamentos</div></div>
-      <div class="kpi"><div class="kpi-val">${s('transferencia')}</div><div class="kpi-label">Transferências</div></div>
-      <div class="kpi"><div class="kpi-val">${s('obito')}</div><div class="kpi-label">Óbitos</div></div>
-      <div class="kpi"><div class="kpi-val">${dados.length?Math.round(s('total')/dados.length):0}</div><div class="kpi-label">Média/plantão</div></div>
-    </div>
-    <div class="secao">Detalhamento por plantão</div>
-    <table><thead><tr><th>Data</th><th>Turno</th><th>Atend.</th><th>Intern.</th><th>Transf.</th><th>Óbitos</th><th>Gripais</th></tr></thead>
-    <tbody>${dados.map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.total||0}</td><td>${r.internamento||0}</td><td>${r.transferencia||0}</td><td>${r.obito||0}</td><td>${r.gripais||0}</td></tr>`).join('')}</tbody></table>`;
-  gerarPDF('Dashboard de Produção',html);
-};
-
-window.exportarPDFProd=function(){
-  window.exportarPDFDashboard(); // mesmos dados
+    <div class="secao">Período: ${per}${trn?' · '+trn:''} · ${dados.length} plantões · Total: ${s('total')} atendimentos</div>
+    <table><thead><tr>
+      <th>Data</th><th>Turno</th><th>Azul</th><th>Verde</th><th>Amarela</th><th>Laranja</th><th>Vermelha</th><th>Total</th><th>Intern.</th><th>Transf.</th><th>Óbito</th><th>Gripais</th><th>Sutura</th>
+    </tr></thead>
+    <tbody>
+      ${dados.map(r=>`<tr>
+        <td>${fmtP(r.data)}</td><td>${r.turno==='DIURNO'?'D':'N'}</td>
+        <td>${r.azul||0}</td><td>${r.verde||0}</td><td>${r.amarela||0}</td><td>${r.laranja||0}</td><td>${r.vermelha||0}</td>
+        <td><b>${r.total||0}</b></td><td>${r.internamento||0}</td><td>${r.transferencia||0}</td><td>${r.obito||0}</td><td>${r.gripais||0}</td><td>${r.sutura||0}</td>
+      </tr>`).join('')}
+      <tr style="font-weight:700;background:#E8F1FA">
+        <td colspan="2">TOTAL</td>
+        <td>${s('azul')}</td><td>${s('verde')}</td><td>${s('amarela')}</td><td>${s('laranja')}</td><td>${s('vermelha')}</td>
+        <td>${s('total')}</td><td>${s('internamento')}</td><td>${s('transferencia')}</td><td>${s('obito')}</td><td>${s('gripais')}</td><td>${s('sutura')}</td>
+      </tr>
+    </tbody></table>`;
+  gerarPDF('Histórico de Produção — UPED',html);
 };
 
 window.exportarPDFCenso=function(){
