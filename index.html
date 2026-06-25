@@ -404,6 +404,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div class="prod-item"><label>🐠 Geral (Nemo)</label><input type="number" id="cs-nemo" min="0" value="0"></div>
       <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
+      <div class="prod-item"><label>🔴 Sala Verm. (OBS)</label><input type="number" id="cs-vermelha-obs" min="0" value="0"></div>
     </div>
     <div class="total-box" style="margin-bottom:14px;">
       <span class="label">Total de Internados</span>
@@ -626,13 +627,14 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 <div class="toast" id="toast"></div>
 
 <footer style="background:#0F3D6B;color:rgba(255,255,255,0.85);padding:16px 24px;font-family:'Segoe UI',system-ui,sans-serif;margin-top:8px;">
-  <div style="font-size:0.8rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:white;margin-bottom:4px;">Lopes · Análise e Gestão de Dados</div>
-  <div style="font-size:0.75rem;opacity:0.75;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-    <span>Desenvolvido por Débora Lopes</span>
-    <span style="opacity:0.4;">|</span>
-    <span>(74) 98838-2952</span>
-    <span style="opacity:0.4;">|</span>
-    <span>UPED · Sistema de Plantão © <span id="footer-ano">2026</span></span>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div style="font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:white;">Datum Studio</div>
+      <div style="font-size:0.72rem;opacity:0.55;margin-top:2px;letter-spacing:0.04em;">Análise · Gestão · Tecnologia</div>
+    </div>
+    <div style="font-size:0.72rem;opacity:0.5;text-align:right;">
+      UPED · Sistema de Plantão © <span id="footer-ano">2026</span>
+    </div>
   </div>
 </footer>
 
@@ -1005,7 +1007,7 @@ async function salvar() {
     await setDoc(doc(db,'plantoes',key),reg);
     // Salva censo junto, se tiver algum dado preenchido
     const dadosCenso={key, data, turno};
-    CAMPOS_CENSO.forEach(c=>{ dadosCenso[c]=parseInt(document.getElementById('cs-'+c).value)||0; });
+    CAMPOS_CENSO.forEach(c=>{ dadosCenso[c]=parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0; });
     dadosCenso.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dadosCenso[c],0);
     const temCenso=CAMPOS_CENSO.some(c=>dadosCenso[c]>0);
     if(temCenso){
@@ -1137,7 +1139,7 @@ function renderDetalhe(r) {
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
         <span style="font-size:0.8rem;">🐠 Nemo: <b>${censo.nemo||0}</b></span>
         <span style="font-size:0.8rem;">🐟 Dory: <b>${censo.dory||0}</b></span>
-        <span style="font-size:0.8rem;">🔴 S.Verm.: <b>${censo.vermelha||0}</b></span>
+        <span style="font-size:0.8rem;">🔴 S.Verm.: <b>${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}</b></span>
         <span style="font-size:0.8rem;font-weight:700;color:#1D4ED8;">Total: ${censo.totalInternados||0}</span>
         <span style="font-size:0.8rem;color:var(--cinza);">|</span>
         <span style="font-size:0.8rem;">⏳ Reg.: <b>${censo.regulacao||0}</b></span>
@@ -1219,7 +1221,9 @@ function gerarTextoWA(r) {
   const censo=censos.find(c=>c.key===r.key);
   if(censo){
     txt+=`*CENSO DO PLANTÃO*\n`;
-    txt+=`*Internados:* Nemo ${censo.nemo||0} · Dory ${censo.dory||0} · Sala Verm. ${censo.vermelha||0} · *Total: ${censo.totalInternados||0}*\n`;
+    const svObs=censo.vermelha_obs||0;
+    const svTxt=svObs>0?`${censo.vermelha||0}+${svObs}(OBS)`:`${censo.vermelha||0}`;
+    txt+=`*Internados:* Nemo ${censo.nemo||0} · Dory ${censo.dory||0} · Sala Verm. ${svTxt} · *Total: ${censo.totalInternados||0}*\n`;
     txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
     txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
   }
@@ -1431,7 +1435,7 @@ function renderInicio(){
             <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Enfermarias</div>
             <div style="font-size:0.82rem;">🐠 Nemo: <b>${ultimoCenso.nemo||0}</b></div>
             <div style="font-size:0.82rem;">🐟 Dory: <b>${ultimoCenso.dory||0}</b></div>
-            <div style="font-size:0.82rem;">🔴 Sala Verm.: <b>${ultimoCenso.vermelha||0}</b></div>
+            <div style="font-size:0.82rem;">🔴 Sala Verm.: <b>${ultimoCenso.vermelha||0}${ultimoCenso.vermelha_obs?'+'+ultimoCenso.vermelha_obs+'(OBS)':''}</b></div>
           </div>
           <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
             <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Situação Clínica</div>
@@ -1464,11 +1468,16 @@ function gerarPDF(titulo, conteudoHTML) {
     .kpi { background:#E8F1FA; border-radius:6px; padding:8px 10px; }
     .kpi-val { font-size:20px; font-weight:700; color:#1B6CA8; }
     .kpi-label { font-size:10px; color:#64748B; }
+    footer { margin-top:24px; padding-top:10px; border-top:1px solid #CBD5E1; display:flex; justify-content:space-between; font-size:10px; color:#94A3B8; }
     @media print { body { padding:12px; } }
   </style></head><body>
   <h1>UPED · Sistema de Plantão</h1>
   <div class="sub">${titulo} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
   ${conteudoHTML}
+  <footer>
+    <span>Datum Studio · Análise · Gestão · Tecnologia</span>
+    <span>UPED · Sistema de Plantão © ${new Date().getFullYear()}</span>
+  </footer>
   <script>window.onload=()=>{ window.print(); }<\/script>
   </body></html>`);
   janela.document.close();
@@ -1546,8 +1555,8 @@ window.exportarPDFCenso=function(){
   const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
   const html=`
     <div class="secao">Período: ${per}</div>
-    <table><thead><tr><th>Data</th><th>Turno</th><th>Nemo</th><th>Dory</th><th>S.Verm.</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Isolamento</th></tr></thead>
-    <tbody>${[...dados].reverse().map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.nemo||0}</td><td>${r.dory||0}</td><td>${r.vermelha||0}</td><td><b>${r.totalInternados||0}</b></td><td>${r.regulacao||0}</td><td>${r.intubados||0}</td><td>${r.cpap||0}</td><td>${r.vni||0}</td><td>${r.isolamento||0}</td></tr>`).join('')}</tbody></table>`;
+    <table><thead><tr><th>Data</th><th>Turno</th><th>Nemo</th><th>Dory</th><th>S.Verm.</th><th>S.Verm.(OBS)</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Isolamento</th></tr></thead>
+    <tbody>${[...dados].reverse().map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.nemo||0}</td><td>${r.dory||0}</td><td>${r.vermelha||0}</td><td>${r.vermelha_obs||0}</td><td><b>${r.totalInternados||0}</b></td><td>${r.regulacao||0}</td><td>${r.intubados||0}</td><td>${r.cpap||0}</td><td>${r.vni||0}</td><td>${r.isolamento||0}</td></tr>`).join('')}</tbody></table>`;
   gerarPDF('Compilado de Censo do Plantão',html);
 };
 
@@ -1772,11 +1781,12 @@ function limparProd(){
 window.limparProd=limparProd;
 
 // ===== CENSO DO PLANTÃO =====
-const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha'];
+const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha','vermelha_obs'];
 const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','isolamento'];
 const CAMPOS_CENSO      = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
 const LABELS_CENSO = {
-  nemo:'🐠 Geral (Nemo)', dory:'🐟 Respiratória (Dory)', vermelha:'🔴 Sala Vermelha',
+  nemo:'🐠 Geral (Nemo)', dory:'🐟 Respiratória (Dory)',
+  vermelha:'🔴 Sala Vermelha', vermelha_obs:'🔴 Sala Verm. (OBS)',
   regulacao:'⏳ Ag. Regulação', intubados:'💨 Intubados',
   cpap:'🫁 CPAP', vni:'😷 VNI', isolamento:'🚨 Isolamento'
 };
@@ -1794,12 +1804,13 @@ onSnapshot(collection(db,'censo'), snap=>{
 });
 
 CAMPOS_CENSO_INT.forEach(c=>{
-  const el=document.getElementById('cs-'+c);
+  const id = 'cs-'+c.replace('_','-');
+  const el=document.getElementById(id);
   if(el) el.addEventListener('input', calcTotalInternados);
 });
 function calcTotalInternados(){
   document.getElementById('cs-total-internados').textContent =
-    CAMPOS_CENSO_INT.reduce((s,c)=>s+(parseInt(document.getElementById('cs-'+c).value)||0),0);
+    CAMPOS_CENSO_INT.reduce((s,c)=>s+(parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0),0);
 }
 
 function chaveCenso(){
@@ -1820,13 +1831,13 @@ async function verificarBloqueoCenso(){
     aviso.style.display='flex';
     document.getElementById('censo-aviso-txt').textContent=`Censo registrado em ${new Date(d.registradoEm).toLocaleString('pt-BR')}${d.editadoEm?' · editado em '+new Date(d.editadoEm).toLocaleString('pt-BR'):''}. Bloqueado.`;
     campos.forEach(el=>el.disabled=true); btn.disabled=true;
-    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c); if(el) el.value=d[c]||0; });
+    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c.replace('_','-')); if(el) el.value=d[c]||0; });
     calcTotalInternados();
   } else {
     aviso.style.display='none';
     campos.forEach(el=>el.disabled=false); btn.disabled=false;
     btn.textContent='💾 Registrar Censo';
-    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c); if(el) el.value=0; });
+    CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c.replace('_','-')); if(el) el.value=0; });
     calcTotalInternados();
   }
 }
@@ -1851,7 +1862,7 @@ window.salvarCenso=async function(){
     data:document.getElementById('f-data').value,
     turno:document.getElementById('f-turno').value
   };
-  CAMPOS_CENSO.forEach(c=>{ dados[c]=parseInt(document.getElementById('cs-'+c).value)||0; });
+  CAMPOS_CENSO.forEach(c=>{ dados[c]=parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0; });
   dados.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dados[c],0);
   const jaExiste=(await getDoc(doc(db,'censo',chave))).exists();
   if(jaExiste) dados.editadoEm=new Date().toISOString();
