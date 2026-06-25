@@ -1123,6 +1123,25 @@ function renderDetalhe(r) {
     }
     html+=`<div class="det-cat"><div class="det-cat-titulo">${cat.icon} ${cat.label}</div>${conteudo}</div>`;
   });
+  // Bloco censo
+  const censo=censos.find(c=>c.key===r.key);
+  if(censo){
+    html+=`<div class="det-cat" style="grid-column:1/-1;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
+      <div class="det-cat-titulo" style="color:#1D4ED8;">🏥 Censo do Plantão</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+        <span style="font-size:0.8rem;">🐠 Nemo: <b>${censo.nemo||0}</b></span>
+        <span style="font-size:0.8rem;">🐟 Dory: <b>${censo.dory||0}</b></span>
+        <span style="font-size:0.8rem;">🔴 S.Verm.: <b>${censo.vermelha||0}</b></span>
+        <span style="font-size:0.8rem;font-weight:700;color:#1D4ED8;">Total: ${censo.totalInternados||0}</span>
+        <span style="font-size:0.8rem;color:var(--cinza);">|</span>
+        <span style="font-size:0.8rem;">⏳ Reg.: <b>${censo.regulacao||0}</b></span>
+        <span style="font-size:0.8rem;">💨 Intub.: <b>${censo.intubados||0}</b></span>
+        <span style="font-size:0.8rem;">🫁 CPAP: <b>${censo.cpap||0}</b></span>
+        <span style="font-size:0.8rem;">😷 VNI: <b>${censo.vni||0}</b></span>
+        <span style="font-size:0.8rem;">🚨 Isol.: <b>${censo.isolamento||0}</b></span>
+      </div>
+    </div>`;
+  }
   return html;
 }
 
@@ -1193,15 +1212,10 @@ function gerarTextoWA(r) {
   // Censo do plantão
   const censo=censos.find(c=>c.key===r.key);
   if(censo){
-    txt+=`*🏥 CENSO DO PLANTÃO*\n`;
+    txt+=`*CENSO DO PLANTÃO*\n`;
     txt+=`*Internados:* Nemo ${censo.nemo||0} · Dory ${censo.dory||0} · Sala Verm. ${censo.vermelha||0} · *Total: ${censo.totalInternados||0}*\n`;
     txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
-    const suporte=[];
-    if(censo.intubados) suporte.push(`Intubados: ${censo.intubados}`);
-    if(censo.cpap) suporte.push(`CPAP: ${censo.cpap}`);
-    if(censo.vni) suporte.push(`VNI: ${censo.vni}`);
-    if(censo.isolamento) suporte.push(`Isolamento: ${censo.isolamento}`);
-    if(suporte.length) txt+=`*Suporte:* ${suporte.join(' · ')}\n`;
+    txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
   }
   return txt;
 }
