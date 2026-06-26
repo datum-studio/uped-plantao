@@ -329,7 +329,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   <button class="tab-btn" onclick="switchTab('registrar')">✏️ Registrar Plantão</button>
   <button class="tab-btn" id="tab-consultar" onclick="switchTab('consultar')">📋 Consultar Plantões</button>
   <button class="tab-btn" onclick="switchTab('producao')">📊 Registro de Produção</button>
-  <button class="tab-btn" onclick="switchTab('gestao')">📊 Relatórios</button>
+  <button class="tab-btn" onclick="switchTab('gestao')">📋 Relatórios</button>
   <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')" style="display:none;">⚙️ Painel Admin</button>
 </div>
 
@@ -600,7 +600,10 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   </div>
   <!-- Profissionais -->
   <div class="card">
-    <div class="card-title" style="display:block;">👥 Profissionais da Equipe</div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>👥 Profissionais da Equipe</span>
+      <button class="btn-exportar" onclick="exportarPDFProfissionais()">⬇️ Relatório PDF</button>
+    </div>
     <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais de <strong>Médicos Plantonistas</strong>.</p>
     <div class="add-prof-row">
       <select id="new-prof-cat" onchange="renderListaProfs()">
@@ -609,8 +612,9 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
         <option value="maqueiro">🧑‍🦽 Maqueiro</option>
         <option value="motorista">🚑 Motorista</option>
         <option value="cozinheira">👩🏻‍🍳 Cozinheira</option>
+        <option value="aux_cozinha">🍳 Auxiliar de Cozinha</option>
         <option value="asg">🚮 ASG</option>
-        <option value="copa">🛎️ Copa</option>
+        <option value="copa">🛎️ Copeira</option>
         <option value="farmacia">💊 Farmácia</option>
         <option value="nutricionista">🥗 Nutricionista</option>
         <option value="farmaceutico">⚗️ Farmacêutico</option>
@@ -728,8 +732,9 @@ const CATS = [
   { id:'maqueiro',     icon:'🧑‍🦽', label:'Maqueiro' },
   { id:'motorista',    icon:'🚑',  label:'Motorista' },
   { id:'cozinheira',   icon:'👩🏻‍🍳', label:'Cozinheira' },
+  { id:'aux_cozinha',  icon:'🍳',  label:'Auxiliar de Cozinha' },
   { id:'asg',          icon:'🚮',  label:'ASG' },
-  { id:'copa',         icon:'🛎️',  label:'Copa' },
+  { id:'copa',         icon:'🛎️',  label:'Copeira' },
   { id:'farmacia',     icon:'💊',  label:'Farmácia' },
   { id:'nutricionista',icon:'🥗',  label:'Nutricionista' },
   { id:'farmaceutico', icon:'⚗️',  label:'Farmacêutico' },
@@ -1738,7 +1743,7 @@ window.exportarPDFDashboard=function(){
   const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
   const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
   const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
-  const pGrav=s('total')?Math.round((s('vermelha')+s('laranja'))/s('total')*100):0;
+  const pGrav=s('total')?Math.round(s('vermelha')/s('total')*100):0;
   const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
   const html=`
     <div class="secao">Período: ${per}${trn?' · '+trn:''}</div>
@@ -1755,7 +1760,7 @@ window.exportarPDFDashboard=function(){
     <div class="secao">Distribuição por tipo de ficha</div>
     <table><thead><tr><th>Ficha</th><th>Quantidade</th><th>% do total</th></tr></thead>
     <tbody>
-      ${[['🔵 Azul','azul'],['🟢 Verde','verde'],['🟡 Amarela','amarela'],['🟠 Laranja','laranja'],['🔴 Vermelha','vermelha']].map(([l,c])=>`<tr><td>${l}</td><td>${s(c)}</td><td>${s('total')?Math.round(s(c)/s('total')*100):0}%</td></tr>`).join('')}
+      ${[['🔵 Azul','azul'],['🟢 Verde','verde'],['🟡 Amarela','amarela'],['🔴 Vermelha','vermelha']].map(([l,c])=>`<tr><td>${l}</td><td>${s(c)}</td><td>${s('total')?Math.round(s(c)/s('total')*100):0}%</td></tr>`).join('')}
     </tbody></table>`;
   gerarPDF('Dashboard Gerencial — UPED',html);
 };
@@ -1774,21 +1779,47 @@ window.exportarPDFProd=function(){
   const html=`
     <div class="secao">Período: ${per}${trn?' · '+trn:''} · ${dados.length} plantões · Total: ${s('total')} atendimentos</div>
     <table><thead><tr>
-      <th>Data</th><th>Turno</th><th>Azul</th><th>Verde</th><th>Amarela</th><th>Laranja</th><th>Vermelha</th><th>Total</th><th>Intern.</th><th>Transf.</th><th>Óbito</th><th>Gripais</th><th>Sutura</th>
+      <th>Data</th><th>Turno</th><th>Azul</th><th>Verde</th><th>Amarela</th><th>Vermelha</th><th>Total</th><th>Intern.</th><th>Transf.</th><th>Óbito</th><th>Gripais</th><th>Sutura</th>
     </tr></thead>
     <tbody>
       ${dados.map(r=>`<tr>
         <td>${fmtP(r.data)}</td><td>${r.turno==='DIURNO'?'D':'N'}</td>
-        <td>${r.azul||0}</td><td>${r.verde||0}</td><td>${r.amarela||0}</td><td>${r.laranja||0}</td><td>${r.vermelha||0}</td>
+        <td>${r.azul||0}</td><td>${r.verde||0}</td><td>${r.amarela||0}</td><td>${r.vermelha||0}</td>
         <td><b>${r.total||0}</b></td><td>${r.internamento||0}</td><td>${r.transferencia||0}</td><td>${r.obito||0}</td><td>${r.gripais||0}</td><td>${r.sutura||0}</td>
       </tr>`).join('')}
       <tr style="font-weight:700;background:#E8F1FA">
         <td colspan="2">TOTAL</td>
-        <td>${s('azul')}</td><td>${s('verde')}</td><td>${s('amarela')}</td><td>${s('laranja')}</td><td>${s('vermelha')}</td>
+        <td>${s('azul')}</td><td>${s('verde')}</td><td>${s('amarela')}</td><td>${s('vermelha')}</td>
         <td>${s('total')}</td><td>${s('internamento')}</td><td>${s('transferencia')}</td><td>${s('obito')}</td><td>${s('gripais')}</td><td>${s('sutura')}</td>
       </tr>
     </tbody></table>`;
   gerarPDF('Histórico de Produção — UPED',html);
+};
+
+window.exportarPDFProfissionais = function() {
+  const ativos = CATS_CADASTRO.map(cat => ({
+    cat,
+    profs: profissionais.filter(p => p.catId === cat.id && p.ativo !== false)
+  })).filter(g => g.profs.length > 0);
+
+  if(!ativos.length){ toast('⚠️ Nenhum profissional ativo cadastrado.','#E53E3E'); return; }
+
+  const total = ativos.reduce((s,g)=>s+g.profs.length, 0);
+  const rows = ativos.map(g=>`
+    <tr style="background:#E8F1FA;">
+      <td colspan="2" style="font-weight:700;color:#1B6CA8;padding:8px 10px;">${g.cat.icon} ${g.cat.label} <span style="font-weight:400;color:#64748B;">(${g.profs.length})</span></td>
+    </tr>
+    ${g.profs.map((p,i)=>`<tr><td style="padding-left:20px;">${i+1}. ${p.nome}</td><td style="color:#22C55E;font-weight:600;">Ativo</td></tr>`).join('')}
+  `).join('');
+
+  const html = `
+    <div class="secao">Profissionais Ativos — UPED · Unidade de Atendimento Pediátrico</div>
+    <div style="margin-bottom:16px;font-size:11px;color:#64748B;">Total: <strong>${total} profissionais ativos</strong> em ${ativos.length} categorias · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+    <table>
+      <thead><tr><th>Profissional</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  gerarPDF('Relatório de Profissionais Ativos', html);
 };
 
 window.exportarPDFCenso=function(){
@@ -1955,15 +1986,15 @@ window.renderDashboard=function(){
   if(!dados.length){ el.innerHTML='<div class="dash-vazio"><div class="big">📊</div><div>Nenhum dado no período.</div></div>'; return; }
   const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
   const total=s('total'); const n=dados.length; const med=Math.round(total/n);
-  const verm=s('vermelha'); const lar=s('laranja'); const amr=s('amarela'); const verd=s('verde'); const azul=s('azul');
-  const pGrav=total?Math.round((verm+lar)/total*100):0; const pMod=total?Math.round(amr/total*100):0; const pBaixa=100-pGrav-pMod;
+  const verm=s('vermelha'); const amr=s('amarela'); const verd=s('verde'); const azul=s('azul');
+  const pGrav=total?Math.round(verm/total*100):0; const pMod=total?Math.round(amr/total*100):0; const pBaixa=100-pGrav-pMod;
   const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
   const st=(l,c)=>l.reduce((a,r)=>a+(r[c]||0),0);
   el.innerHTML=`
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Plantões</div><div class="kpi-valor">${n}</div><div class="kpi-sub">${diu.length} diurno · ${not.length} noturno</div></div>
       <div class="kpi-card"><div class="kpi-label">Atendimentos</div><div class="kpi-valor">${total}</div><div class="kpi-sub">média ${med}/plantão</div></div>
-      <div class="kpi-card"><div class="kpi-label">Gravidade alta</div><div class="kpi-valor ${pGrav>=15?'verm':pGrav>=8?'amar':'verd'}">${pGrav}%</div><div class="kpi-sub">🔴 ${verm} · 🟠 ${lar}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gravidade alta</div><div class="kpi-valor ${pGrav>=15?'verm':pGrav>=8?'amar':'verd'}">${pGrav}%</div><div class="kpi-sub">🔴 ${verm} vermelhas</div></div>
       <div class="kpi-card"><div class="kpi-label">Internamentos</div><div class="kpi-valor">${s('internamento')}</div><div class="kpi-sub">${total?((s('internamento')/total)*100).toFixed(1):0}% dos atend.</div></div>
       <div class="kpi-card"><div class="kpi-label">Transferências</div><div class="kpi-valor">${s('transferencia')}</div><div class="kpi-sub">no período</div></div>
       <div class="kpi-card"><div class="kpi-label">Óbitos</div><div class="kpi-valor ${s('obito')>0?'verm':''}">${s('obito')}</div><div class="kpi-sub">no período</div></div>
@@ -2008,7 +2039,7 @@ window.renderDashboard=function(){
     </div>`;
   if(chartEv){chartEv.destroy();chartEv=null;} if(chartFichas){chartFichas.destroy();chartFichas=null;}
   chartEv=new Chart(document.getElementById('ch-ev'),{type:'line',data:{labels:dados.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'D':'N'}`;}),datasets:[{label:'Atendimentos',data:dados.map(r=>r.total||0),borderColor:'#1B6CA8',backgroundColor:'rgba(27,108,168,0.1)',tension:0.3,fill:true,pointRadius:3},{label:'Internamentos',data:dados.map(r=>r.internamento||0),borderColor:'#2E7D57',borderDash:[5,3],tension:0.3,pointRadius:2,backgroundColor:'rgba(0,0,0,0)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:20,font:{size:11}}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
-  chartFichas=new Chart(document.getElementById('ch-fichas'),{type:'bar',data:{labels:['🔵 Azul','🟢 Verde','🟡 Amarela','🟠 Laranja','🔴 Vermelha'],datasets:[{data:[azul,verd,amr,lar,verm],backgroundColor:['#3B82F6','#22C55E','#EAB308','#F97316','#EF4444'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
+  chartFichas=new Chart(document.getElementById('ch-fichas'),{type:'bar',data:{labels:['🔵 Azul','🟢 Verde','🟡 Amarela','🔴 Vermelha'],datasets:[{data:[azul,verd,amr,verm],backgroundColor:['#3B82F6','#22C55E','#EAB308','#EF4444'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
 };
 window.limparDashboard=function(){
   const {ini,fim}=periodoUltimoMes();
