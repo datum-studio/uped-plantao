@@ -274,13 +274,11 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div style="font-size:0.78rem;color:#64748B;margin-top:4px;">Unidade de Atendimento Pediátrico</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">E-mail</label>
-        <input type="email" id="login-email" placeholder="seu@email.com" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+      <div><label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="username" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
       </div>
-      <div>
-        <label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Senha</label>
-        <input type="password" id="login-senha" placeholder="••••••••" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+      <div><label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
       </div>
       <div id="login-erro" style="font-size:0.8rem;color:#E53E3E;min-height:18px;"></div>
       <button id="btn-login" style="width:100%;padding:12px;background:#1B6CA8;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">Entrar</button>
@@ -1458,6 +1456,11 @@ document.getElementById('btn-confirmar-senha').addEventListener('click', async (
 });
 
 window.fazerLogout = async function() {
+  const btn = document.getElementById('btn-login');
+  if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
+  document.getElementById('login-email').value='';
+  document.getElementById('login-senha').value='';
+  document.getElementById('login-erro').textContent='';
   await signOut(auth);
 };
 
