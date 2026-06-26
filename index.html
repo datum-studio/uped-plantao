@@ -264,6 +264,30 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 </head>
 <body>
 
+<!-- TELA DE LOGIN -->
+<div id="tela-login" style="position:fixed;inset:0;background:#0F3D6B;display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;">
+  <div style="background:white;border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:2.5rem;margin-bottom:8px;">🏥</div>
+      <div style="font-size:1.2rem;font-weight:700;color:#1B6CA8;">UPED · Sistema de Plantão</div>
+      <div style="font-size:0.78rem;color:#64748B;margin-top:4px;">Unidade de Atendimento Pediátrico</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+      </div>
+      <div id="login-erro" style="font-size:0.8rem;color:#E53E3E;min-height:18px;"></div>
+      <button id="btn-login" onclick="fazerLogin()" style="width:100%;padding:12px;background:#1B6CA8;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">Entrar</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:0.72rem;color:#94A3B8;">Datum Studio · UPED © 2026</div>
+  </div>
+</div>
+
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div><div>Conectando...</div>
 </div>
@@ -298,9 +322,16 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
 <header>
   <div style="font-size:26px">🏥</div>
-  <div>
+  <div style="flex:1;">
     <h1>UPED · Sistema de Plantão</h1>
     <p>Unidade de Atendimento Pediátrico · Gestão em tempo real</p>
+  </div>
+  <div id="header-usuario" style="display:none;align-items:center;gap:10px;flex-shrink:0;">
+    <div style="text-align:right;">
+      <div id="header-nome" style="font-size:0.82rem;font-weight:600;color:white;"></div>
+      <div id="header-perfil" style="font-size:0.7rem;opacity:0.75;"></div>
+    </div>
+    <button onclick="fazerLogout()" style="padding:5px 10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Sair</button>
   </div>
 </header>
 
@@ -408,6 +439,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Verm. (OBS)</label><input type="number" id="cs-vermelha-obs" min="0" value="0"></div>
+      <div class="prod-item"><label>💊 Obs. Geral (Medicação)</label><input type="number" id="cs-obs-medicacao" min="0" value="0"></div>
     </div>
     <div class="total-box" style="margin-bottom:14px;">
       <span class="label">Total de Internados</span>
@@ -486,7 +518,6 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div class="prod-item"><label>🟢 Ficha Verde</label><input type="number" id="p-verde" min="0" value="0"></div>
       <div class="prod-item"><label>🟡 Ficha Amarela</label><input type="number" id="p-amarela" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Ficha Vermelha</label><input type="number" id="p-vermelha" min="0" value="0"></div>
-      <div class="prod-item"><label>🟠 Ficha Laranja</label><input type="number" id="p-laranja" min="0" value="0"></div>
     </div>
     <div class="total-box" style="margin-bottom:10px;">
       <span class="label">Total de Atendimentos</span>
@@ -501,6 +532,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div class="prod-item"><label>🚪 Evasão</label><input type="number" id="p-evasao" min="0" value="0"></div>
       <div class="prod-item"><label>🚑 Transferência</label><input type="number" id="p-transferencia" min="0" value="0"></div>
       <div class="prod-item"><label>⚫ Óbito</label><input type="number" id="p-obito" min="0" value="0"></div>
+      <div class="prod-item"><label>🩻 Raio-X</label><input type="number" id="p-raiox" min="0" value="0"></div>
+      <div class="prod-item"><label>🧪 Laboratório</label><input type="number" id="p-laboratorio" min="0" value="0"></div>
     </div>
     <button class="btn-salvar" id="btn-salvar-prod" onclick="salvarProducao()">💾 Registrar Produção</button>
   </div>
@@ -577,6 +610,24 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
   <!-- Equipe -->
   <div id="gsec-equipe" style="display:none;">
+    <!-- Gerenciar Usuários -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title" style="display:block;">🔑 Gerenciar Usuários</div>
+      <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">Usuários com perfil <strong>Admin</strong> têm acesso completo. <strong>Recepção</strong> acessa apenas Registrar Plantão, Consultar e Produção.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <input type="text" id="nu-nome" placeholder="Nome completo" style="flex:2;min-width:140px;">
+        <input type="email" id="nu-email" placeholder="E-mail" style="flex:2;min-width:160px;">
+        <input type="password" id="nu-senha" placeholder="Senha (mín. 6)" style="flex:1;min-width:120px;">
+        <select id="nu-perfil" style="flex:1;min-width:120px;">
+          <option value="recepcao">Recepção</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <button class="btn-add-prof" onclick="criarUsuario()">+ Criar</button>
+      </div>
+      <div class="prof-erro" id="nu-erro"></div>
+      <div id="lista-usuarios"></div>
+    </div>
+    <!-- Gerenciar Profissionais -->
     <div class="card">
       <div class="card-title" style="display:block;">👥 Gerenciar Profissionais</div>
       <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais cadastrados em <strong>Médicos Plantonistas</strong>.</p>
@@ -647,6 +698,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, deleteUser as fbDeleteUser, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
@@ -657,6 +709,10 @@ const app = initializeApp({
   appId:"1:875342869066:web:db1b3f71c3ae87330eecb3"
 });
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ===== ESTADO DE AUTENTICAÇÃO =====
+let usuarioAtual = null; // { uid, email, displayName, perfil }
 
 // ===== CONSTANTES =====
 const SENHA = 'uped2026';
@@ -669,34 +725,36 @@ const TURNOS_PROF = [
 const SIGLAS = { DIURNO:'D', NOTURNO:'N', MANHA:'M', TARDE:'T' };
 const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const CATS = [
-  { id:'recepcao',   icon:'👩‍💻', label:'Recepção' },
-  { id:'portaria',   icon:'🫸🏻', label:'Ag. de Portaria' },
-  { id:'maqueiro',   icon:'🧑‍🦽', label:'Maqueiro' },
-  { id:'motorista',  icon:'🚑',  label:'Motorista' },
-  { id:'cozinheira', icon:'👩🏻‍🍳', label:'Cozinheira' },
-  { id:'asg',        icon:'🚮',  label:'ASG' },
-  { id:'copa',       icon:'🛎️',  label:'Copa' },
-  { id:'farmacia',   icon:'💊',  label:'Farmácia' },
-  { id:'social',     icon:'👩‍🏫', label:'Serviço Social' },
-  { id:'tec_enf',    icon:'👩🏻‍⚕️', label:'Téc. Enfermagem' },
-  { id:'enfermeiro', icon:'🩺',  label:'Enfermeiros(as)' },
-  { id:'medico',     icon:'👨‍⚕️', label:'Médicos Plantonistas' },
-  { id:'evolucao',   icon:'📋',  label:'Evolução' },
-  { id:'fisio',      icon:'🦺',  label:'Fisioterapeuta' },
-  { id:'p3',         icon:'👨‍⚕️', label:'Plantonista P3' },
+  { id:'recepcao',     icon:'👩‍💻', label:'Recepção' },
+  { id:'portaria',     icon:'🫸🏻', label:'Ag. de Portaria' },
+  { id:'maqueiro',     icon:'🧑‍🦽', label:'Maqueiro' },
+  { id:'motorista',    icon:'🚑',  label:'Motorista' },
+  { id:'cozinheira',   icon:'👩🏻‍🍳', label:'Cozinheira' },
+  { id:'asg',          icon:'🚮',  label:'ASG' },
+  { id:'copa',         icon:'🛎️',  label:'Copa' },
+  { id:'farmacia',     icon:'💊',  label:'Farmácia' },
+  { id:'nutricionista',icon:'🥗',  label:'Nutricionista' },
+  { id:'farmaceutico', icon:'⚗️',  label:'Farmacêutico' },
+  { id:'social',       icon:'👩‍🏫', label:'Serviço Social' },
+  { id:'tec_enf',      icon:'👩🏻‍⚕️', label:'Téc. Enfermagem' },
+  { id:'enfermeiro',   icon:'🩺',  label:'Enfermeiros(as)' },
+  { id:'medico',       icon:'👨‍⚕️', label:'Médicos Plantonistas' },
+  { id:'evolucao',     icon:'📋',  label:'Evolução' },
+  { id:'fisio',        icon:'🦺',  label:'Fisioterapeuta' },
+  { id:'p3',           icon:'👨‍⚕️', label:'Plantonista P3' },
 ];
-// Categorias que usam profissionais de outra catId para o select
 const CAT_FONTE = { evolucao:'medico', p3:'medico' };
-// Categorias que aparecem no cadastro de profissionais (sem evolucao e p3)
 const CATS_CADASTRO = CATS.filter(c=>!CAT_FONTE[c.id]);
-const CAMPOS_FICHAS = ['azul','verde','amarela','vermelha','laranja'];
-const CAMPOS_COMP   = ['gripais','sutura','internamento','alta','evasao','transferencia','obito'];
+// Laranja removida
+const CAMPOS_FICHAS = ['azul','verde','amarela','vermelha'];
+const CAMPOS_COMP   = ['gripais','sutura','internamento','alta','evasao','transferencia','obito','raiox','laboratorio'];
 const CAMPOS_PROD   = [...CAMPOS_FICHAS,...CAMPOS_COMP];
 const LABELS_PROD   = {
-  azul:'🔵 Ficha Azul',verde:'🟢 Ficha Verde',amarela:'🟡 Ficha Amarela',
-  vermelha:'🔴 Ficha Vermelha',laranja:'🟠 Ficha Laranja',gripais:'🤧 Sint. Gripais',
-  sutura:'🪡 Sutura',internamento:'🛏️ Internamento',alta:'✅ Alta',
-  evasao:'🚪 Evasão',transferencia:'🚑 Transferência',obito:'⚫ Óbito'
+  azul:'🔵 Ficha Azul', verde:'🟢 Ficha Verde', amarela:'🟡 Ficha Amarela',
+  vermelha:'🔴 Ficha Vermelha',
+  gripais:'🤧 Sint. Gripais', sutura:'🪡 Sutura', internamento:'🛏️ Internamento',
+  alta:'✅ Alta', evasao:'🚪 Evasão', transferencia:'🚑 Transferência',
+  obito:'⚫ Óbito', raiox:'🩻 Raio-X', laboratorio:'🧪 Laboratório'
 };
 
 // ===== STATE =====
@@ -1112,9 +1170,9 @@ function renderLista(lista) {
         <div class="det-grid">${renderDetalhe(r)}</div>
         ${r.obs?`<div class="obs-bloco">📝 ${r.obs}</div>`:''}
         <div class="pc-acoes">
-          <button class="btn-edit" onclick="editarPlantao('${r.key}')">✏️ Editar</button>
+          ${window._isAdmin ? `<button class="btn-edit" onclick="editarPlantao('${r.key}')">✏️ Editar</button>` : ''}
           <button class="btn-wa" onclick="compartilharWA('${r.key}')">📲 WhatsApp</button>
-          <button class="btn-del" onclick="abrirExcluir('${r.key}')">🗑️ Excluir</button>
+          ${window._isAdmin ? `<button class="btn-del" onclick="abrirExcluir('${r.key}')">🗑️ Excluir</button>` : ''}
         </div>
       </div>`;
     el.appendChild(div);
@@ -1233,10 +1291,8 @@ function gerarTextoWA(r) {
     txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
     txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
   }
-  return txt;
-}
-
-window.compartilharWA=function(key){
+  return txt + (usuarioAtual ? `_Registrado por: ${usuarioAtual.nome}_` : '');
+}=function(key){
   const r=plantoes.find(x=>x.key===key); if(!r) return;
   window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoWA(r)),'_blank');
 };
@@ -1363,7 +1419,134 @@ window.exportarCatCSV=function(){
   toast('⬇️ CSV exportado!');
 };
 
-// ===== SWITCH TAB =====
+// ===== AUTENTICAÇÃO =====
+window.fazerLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const erroEl = document.getElementById('login-erro');
+  const btn = document.getElementById('btn-login');
+  if(!email||!senha){ erroEl.textContent='Preencha e-mail e senha.'; return; }
+  btn.disabled=true; btn.textContent='Entrando...';
+  try {
+    await signInWithEmailAndPassword(auth, email, senha);
+  } catch(e) {
+    erroEl.textContent = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
+      ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
+    btn.disabled=false; btn.textContent='Entrar';
+  }
+};
+document.getElementById('login-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') window.fazerLogin(); });
+document.getElementById('login-email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('login-senha').focus(); });
+
+window.fazerLogout = async function() {
+  await signOut(auth);
+};
+
+// Listener de autenticação — ponto central de controle
+onAuthStateChanged(auth, async user => {
+  if(!user) {
+    // Não logado — mostra tela de login
+    usuarioAtual = null;
+    document.getElementById('tela-login').style.display='flex';
+    document.getElementById('loading').style.display='none';
+    document.getElementById('header-usuario').style.display='none';
+    return;
+  }
+  // Logado — busca perfil no Firestore
+  document.getElementById('tela-login').style.display='none';
+  const perfilSnap = await getDoc(doc(db,'usuarios',user.uid));
+  const perfil = perfilSnap.exists() ? perfilSnap.data().perfil : 'recepcao';
+  const nome = user.displayName || user.email.split('@')[0];
+  usuarioAtual = { uid:user.uid, email:user.email, nome, perfil };
+  // Atualiza header
+  document.getElementById('header-usuario').style.display='flex';
+  document.getElementById('header-nome').textContent = nome;
+  document.getElementById('header-perfil').textContent = perfil==='admin' ? '🔑 Administrador' : '👩‍💻 Recepção';
+  // Aplica restrições de acesso
+  aplicarPermissoes(perfil);
+  // Inicializa sistema
+  inicializarSistema();
+});
+
+function aplicarPermissoes(perfil) {
+  const isAdmin = perfil === 'admin';
+  // Aba Gestão — só admin
+  const tabGestao = document.querySelector('[onclick="switchTab(\'gestao\')"]');
+  if(tabGestao) tabGestao.style.display = isAdmin ? '' : 'none';
+  // Botões de editar/excluir em consulta — só admin (aplicado no render)
+  window._isAdmin = isAdmin;
+}
+
+// ===== GERENCIAR USUÁRIOS =====
+window.criarUsuario = async function() {
+  const email = document.getElementById('nu-email').value.trim();
+  const senha = document.getElementById('nu-senha').value;
+  const nome  = document.getElementById('nu-nome').value.trim();
+  const perfil= document.getElementById('nu-perfil').value;
+  const erroEl= document.getElementById('nu-erro');
+  if(!email||!senha||!nome){ erroEl.textContent='Preencha todos os campos.'; return; }
+  if(senha.length<6){ erroEl.textContent='Senha mínima: 6 caracteres.'; return; }
+  erroEl.textContent='';
+  try {
+    // Cria auth secundário para não deslogar o admin atual
+    const { initializeApp: initApp2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2, updateProfile: updProfile2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const app2 = initApp2({
+      apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
+      authDomain:"uped-plantao.firebaseapp.com",
+      projectId:"uped-plantao",
+      storageBucket:"uped-plantao.firebasestorage.app",
+      messagingSenderId:"875342869066",
+      appId:"1:875342869066:web:db1b3f71c3ae87330eecb3"
+    }, 'app2-'+Date.now());
+    const auth2 = getAuth2(app2);
+    const cred = await createUser2(auth2, email, senha);
+    await updProfile2(cred.user, { displayName: nome });
+    await setDoc(doc(db,'usuarios',cred.user.uid), { email, nome, perfil, criadoEm:new Date().toISOString() });
+    await auth2.signOut();
+    document.getElementById('nu-email').value='';
+    document.getElementById('nu-senha').value='';
+    document.getElementById('nu-nome').value='';
+    toast('✅ Usuário criado com sucesso!');
+    carregarUsuarios();
+  } catch(e) {
+    erroEl.textContent = e.code==='auth/email-already-in-use' ? 'E-mail já cadastrado.' : 'Erro: '+e.message;
+  }
+};
+
+async function carregarUsuarios() {
+  const el = document.getElementById('lista-usuarios');
+  if(!el) return;
+  const snap = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+    .then(m=>m.getDocs(m.collection(db,'usuarios')));
+  if(snap.empty){ el.innerHTML='<p style="font-size:0.83rem;color:var(--cinza);padding:12px;">Nenhum usuário cadastrado ainda.</p>'; return; }
+  el.innerHTML = snap.docs.map(d=>{
+    const u=d.data();
+    return `<div class="prof-item">
+      <span class="prof-item-nome">${u.nome}</span>
+      <span style="font-size:0.75rem;color:var(--cinza);">${u.email}</span>
+      <span class="${u.perfil==='admin'?'badge-ativo':'badge-inativo'}">${u.perfil==='admin'?'Admin':'Recepção'}</span>
+      <button class="btn-excluir-p" onclick="removerUsuario('${d.id}','${u.nome.replace(/'/g,"\\'")}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+window.carregarUsuarios=carregarUsuarios;
+
+window.removerUsuario = async function(uid, nome) {
+  if(!confirm(`Remover usuário "${nome}"?`)) return;
+  await deleteDoc(doc(db,'usuarios',uid));
+  toast('🗑️ Usuário removido. Senha ainda válida no Auth — remova manualmente no Firebase Console se necessário.');
+  carregarUsuarios();
+};
+
+function inicializarSistema() {
+  document.getElementById('f-data').valueAsDate=new Date();
+  document.getElementById('fp-data').valueAsDate=new Date();
+  aplicarPeriodoPadrao();
+  initEstado();
+  rebuildarForm();
+  switchTab('inicio');
+}
 window.switchTab=function(tab, semSenha){
   if(tab==='gestao' && !semSenha){
     // Gestão é livre — só Equipe dentro dela pede senha
@@ -1393,7 +1576,10 @@ window.switchGestao=function(sec){
   });
   aplicarPeriodoPadrao();
   if(sec==='equipe'){
-    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{ renderListaProfs(); });
+    abrirSenha('👥 Gerenciar Equipe','Informe a senha de supervisor para acessar o gerenciamento de profissionais.',()=>{
+      renderListaProfs();
+      carregarUsuarios();
+    });
   }
   if(sec==='dash') renderDashboard();
   if(sec==='hist') filtrarProducao();
@@ -1787,12 +1973,13 @@ function limparProd(){
 window.limparProd=limparProd;
 
 // ===== CENSO DO PLANTÃO =====
-const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha','vermelha_obs'];
+const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha','vermelha_obs','obs_medicacao'];
 const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','isolamento'];
 const CAMPOS_CENSO      = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
 const LABELS_CENSO = {
   nemo:'🐠 Geral (Nemo)', dory:'🐟 Respiratória (Dory)',
   vermelha:'🔴 Sala Vermelha', vermelha_obs:'🔴 Sala Verm. (OBS)',
+  obs_medicacao:'💊 Obs. Geral (Medicação)',
   regulacao:'⏳ Ag. Regulação', intubados:'💨 Intubados',
   cpap:'🫁 CPAP', vni:'😷 VNI', isolamento:'🚨 Isolamento'
 };
@@ -1923,8 +2110,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 document.getElementById('footer-ano').textContent=new Date().getFullYear();
-document.getElementById('f-data').valueAsDate=new Date();
-document.getElementById('fp-data').valueAsDate=new Date();
 
 function periodoUltimoMes() {
   const fim=new Date(); const ini=new Date(); ini.setDate(ini.getDate()-30);
@@ -1935,10 +2120,8 @@ function aplicarPeriodoPadrao() {
   ['db-ini','rp-ini','rc-ini'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=ini; });
   ['db-fim','rp-fim','rc-fim'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=fim; });
 }
-aplicarPeriodoPadrao();
-
-initEstado();
-rebuildarForm();
+// A inicialização do sistema acontece em inicializarSistema()
+// chamada pelo onAuthStateChanged após login confirmado
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </body>
