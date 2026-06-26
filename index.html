@@ -284,6 +284,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       </div>
       <div id="login-erro" style="font-size:0.8rem;color:#E53E3E;min-height:18px;"></div>
       <button id="btn-login" style="width:100%;padding:12px;background:#1B6CA8;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">Entrar</button>
+      <button id="btn-esqueci-senha" style="width:100%;padding:8px;background:none;border:none;color:#64748B;font-size:0.8rem;cursor:pointer;font-family:inherit;margin-top:4px;">Esqueci minha senha</button>
     </div>
     <div style="text-align:center;margin-top:20px;font-size:0.72rem;color:#94A3B8;">Datum Studio · UPED © 2026</div>
   </div>
@@ -320,6 +321,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
       <div id="header-nome" style="font-size:0.82rem;font-weight:600;color:white;"></div>
       <div id="header-perfil" style="font-size:0.7rem;opacity:0.75;"></div>
     </div>
+    <button id="btn-alterar-senha" style="padding:5px 10px;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:6px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">🔑 Senha</button>
     <button id="btn-logout" style="padding:5px 10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Sair</button>
   </div>
 </header>
@@ -335,29 +337,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
 <!-- ===== INÍCIO ===== -->
 <div class="tab-panel active" id="panel-inicio">
-  <!-- Cards de acesso rápido -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;">
-    <div class="inicio-card" onclick="switchTab('registrar')">
-      <div class="inicio-card-icon">✏️</div>
-      <div class="inicio-card-titulo">Registrar Plantão</div>
-      <div class="inicio-card-desc">Cadastre a escala do plantão atual com toda a equipe</div>
-    </div>
-    <div class="inicio-card" onclick="switchTab('consultar')">
-      <div class="inicio-card-icon">📋</div>
-      <div class="inicio-card-titulo">Consultar Plantões</div>
-      <div class="inicio-card-desc">Visualize e filtre os plantões registrados</div>
-    </div>
-    <div class="inicio-card" onclick="switchTab('producao')">
-      <div class="inicio-card-icon">📊</div>
-      <div class="inicio-card-titulo">Registro de Produção</div>
-      <div class="inicio-card-desc">Registre os atendimentos ao final de cada plantão</div>
-    </div>
-    <div class="inicio-card" onclick="switchTab('gestao')">
-      <div class="inicio-card-icon">📈</div>
-      <div class="inicio-card-titulo">Gestão</div>
-      <div class="inicio-card-desc">Dashboard, histórico de produção e gerenciamento de equipe</div>
-    </div>
-  </div>
+  <!-- Cards de acesso rápido — gerados por JS conforme perfil -->
+  <div id="inicio-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;"></div>
   <!-- Resumo do dia -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;" id="inicio-resumo">
     <div class="card"><div class="card-title" style="display:block;">📅 Último Plantão Registrado</div><div id="inicio-ultimo-plantao" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
@@ -671,6 +652,26 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   </div>
 </div>
 
+<!-- MODAL ALTERAR SENHA -->
+<div class="modal-overlay hidden" id="modal-alterar-senha">
+  <div class="modal-box" style="max-width:380px;">
+    <h3 style="color:var(--azul);margin-bottom:16px;">🔑 Alterar Senha</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Senha atual</label>
+        <input type="password" id="as-atual" placeholder="••••••••"></div>
+      <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Nova senha (mín. 6 caracteres)</label>
+        <input type="password" id="as-nova" placeholder="••••••••"></div>
+      <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Confirmar nova senha</label>
+        <input type="password" id="as-confirma" placeholder="••••••••"></div>
+      <div id="as-erro" style="font-size:0.8rem;color:var(--vermelho);min-height:18px;"></div>
+    </div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn-modal-cancel" onclick="document.getElementById('modal-alterar-senha').classList.add('hidden')">Cancelar</button>
+      <button class="btn-modal-confirm ativo" id="btn-confirmar-senha" style="background:var(--azul);">Alterar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <footer style="background:#0F3D6B;padding:20px 28px;font-family:'Geist',system-ui,sans-serif;margin-top:8px;">
@@ -691,7 +692,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, deleteUser as fbDeleteUser, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, deleteUser as fbDeleteUser, updateProfile, sendPasswordResetEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
@@ -1270,7 +1271,7 @@ function gerarTextoWA(r) {
     txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
     txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
   }
-  return txt + (usuarioAtual ? `_Registrado por: ${usuarioAtual.nome}_` : '');
+  return txt + (usuarioAtual ? `\n_Registrado por: ${usuarioAtual.nome}_` : '');
 }
 
 window.compartilharWA=function(key){
@@ -1420,6 +1421,42 @@ document.getElementById('btn-login').addEventListener('click', window.fazerLogin
 document.getElementById('login-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') window.fazerLogin(); });
 document.getElementById('login-email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('login-senha').focus(); });
 
+document.getElementById('btn-esqueci-senha').addEventListener('click', async ()=>{
+  const email = document.getElementById('login-email').value.trim();
+  const erroEl = document.getElementById('login-erro');
+  if(!email){ erroEl.textContent='Digite seu e-mail acima primeiro.'; return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    erroEl.style.color='var(--verde)';
+    erroEl.textContent='✅ E-mail de redefinição enviado! Verifique sua caixa de entrada.';
+    setTimeout(()=>{ erroEl.textContent=''; erroEl.style.color=''; },6000);
+  } catch(e) {
+    erroEl.textContent = 'E-mail não encontrado no sistema.';
+  }
+});
+
+document.getElementById('btn-confirmar-senha').addEventListener('click', async ()=>{
+  const atual    = document.getElementById('as-atual').value;
+  const nova     = document.getElementById('as-nova').value;
+  const confirma = document.getElementById('as-confirma').value;
+  const erroEl   = document.getElementById('as-erro');
+  if(!atual||!nova||!confirma){ erroEl.textContent='Preencha todos os campos.'; return; }
+  if(nova !== confirma){ erroEl.textContent='As senhas não coincidem.'; return; }
+  if(nova.length < 6){ erroEl.textContent='Mínimo 6 caracteres.'; return; }
+  erroEl.textContent='';
+  try {
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, atual);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    await updatePassword(auth.currentUser, nova);
+    document.getElementById('modal-alterar-senha').classList.add('hidden');
+    ['as-atual','as-nova','as-confirma'].forEach(id=>document.getElementById(id).value='');
+    toast('✅ Senha alterada com sucesso!');
+  } catch(e) {
+    erroEl.textContent = e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'
+      ? 'Senha atual incorreta.' : 'Erro ao alterar: '+e.message;
+  }
+});
+
 window.fazerLogout = async function() {
   await signOut(auth);
 };
@@ -1446,6 +1483,8 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('header-perfil').textContent = perfil==='admin' ? '🔑 Administrador' : '👩‍💻 Recepção';
   const btnLogout = document.getElementById('btn-logout');
   if(btnLogout) btnLogout.onclick = window.fazerLogout;
+  const btnAlterarSenha = document.getElementById('btn-alterar-senha');
+  if(btnAlterarSenha) btnAlterarSenha.onclick = ()=>{ document.getElementById('modal-alterar-senha').classList.remove('hidden'); document.getElementById('as-atual').focus(); };
   // Aplica restrições de acesso
   aplicarPermissoes(perfil);
   // Inicializa sistema
@@ -1558,17 +1597,38 @@ window.switchGestao=function(sec){
 };
 
 function aplicarPermissoes(perfil) {
-  const isAdm = perfil === 'admin';
-  window._isAdmin = isAdm;
-  // Aba Gestão — só admin
+  const adm = perfil === 'admin';
+  window._isAdmin = adm;
+
+  // Abas visíveis
   const tabGestao = document.querySelector('[onclick="switchTab(\'gestao\')"]');
-  if(tabGestao) tabGestao.style.display = isAdm ? '' : 'none';
-  // Aba Painel Admin — só admin
+  if(tabGestao) tabGestao.style.display = adm ? '' : 'none';
   const tabAdmin = document.getElementById('tab-admin');
-  if(tabAdmin) tabAdmin.style.display = isAdm ? '' : 'none';
+  if(tabAdmin) tabAdmin.style.display = adm ? '' : 'none';
+
+  // Cards do Início conforme perfil
+  const todosCards = [
+    { tab:'registrar', icon:'✏️', titulo:'Registrar Plantão',     desc:'Cadastre a escala do plantão atual com toda a equipe' },
+    { tab:'consultar', icon:'📋', titulo:'Consultar Plantões',     desc:'Visualize e filtre os plantões registrados' },
+    { tab:'producao',  icon:'📊', titulo:'Registro de Produção',   desc:'Registre os atendimentos ao final de cada plantão' },
+    { tab:'gestao',    icon:'📈', titulo:'Gestão',                 desc:'Dashboard, histórico de produção e censo', adminOnly:true },
+    { tab:'admin',     icon:'⚙️', titulo:'Painel Admin',           desc:'Usuários e profissionais da equipe', adminOnly:true },
+  ];
+  const cardsEl = document.getElementById('inicio-cards');
+  if(cardsEl){
+    cardsEl.innerHTML = todosCards
+      .filter(c => !c.adminOnly || adm)
+      .map(c=>`<div class="inicio-card" onclick="switchTab('${c.tab}')">
+        <div class="inicio-card-icon">${c.icon}</div>
+        <div class="inicio-card-titulo">${c.titulo}</div>
+        <div class="inicio-card-desc">${c.desc}</div>
+      </div>`).join('');
+  }
 }
 
 function renderInicio(){
+  // Garante cards corretos para o perfil atual
+  if(usuarioAtual) aplicarPermissoes(usuarioAtual.perfil);
   const hoje = new Date().toISOString().slice(0,10);
   const plantaoHoje = plantoes.filter(r=>r.data===hoje);
   const temDiurno  = plantaoHoje.some(r=>r.turno==='DIURNO');
