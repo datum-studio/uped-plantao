@@ -232,11 +232,11 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 .comp-total span { font-weight:700; color:var(--texto); } .comp-total small { color:var(--cinza); }
 
 /* INÍCIO */
-.inicio-card { background:white; border-radius:12px; border:1px solid var(--cinza-borda); padding:20px 18px; cursor:pointer; transition:all 0.18s; }
+.inicio-card { background:white; border-radius:12px; border:1px solid var(--cinza-borda); padding:20px 18px; cursor:pointer; transition:all 0.18s; display:flex; flex-direction:column; }
 .inicio-card:hover { border-color:var(--azul); box-shadow:0 4px 16px rgba(27,108,168,0.12); transform:translateY(-2px); }
 .inicio-card-icon { font-size:2rem; margin-bottom:10px; }
 .inicio-card-titulo { font-size:0.95rem; font-weight:700; color:var(--azul); margin-bottom:5px; }
-.inicio-card-desc { font-size:0.78rem; color:var(--cinza); line-height:1.45; }
+.inicio-card-desc { font-size:0.78rem; color:var(--cinza); line-height:1.45; margin-top:auto; }
 @media (max-width:580px) { #inicio-resumo { grid-template-columns:1fr; } }
 
 /* CHART LEGEND */
@@ -258,6 +258,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
   .cats-grid { grid-template-columns:1fr; }
   .p3-grid { grid-template-columns:1fr; }
   .dash-row { grid-template-columns:1fr; }
+  footer > div { flex-direction:column; align-items:center; text-align:center; }
+  footer > div > div { text-align:center; }
   .turno-comp { grid-template-columns:1fr; }
   .form-row { flex-direction:column; }
 }
@@ -336,7 +338,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 <!-- ===== INÍCIO ===== -->
 <div class="tab-panel active" id="panel-inicio">
   <!-- Cards de acesso rápido — gerados por JS conforme perfil -->
-  <div id="inicio-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;"></div>
+  <div id="inicio-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;align-items:stretch;"></div>
   <!-- Resumo do dia -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;" id="inicio-resumo">
     <div class="card"><div class="card-title" style="display:block;">📅 Último Plantão Registrado</div><div id="inicio-ultimo-plantao" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
@@ -678,10 +680,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
 <footer style="background:#0F3D6B;padding:20px 28px;font-family:'Geist',system-ui,sans-serif;margin-top:8px;">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-    <div>
-      <div style="font-size:0.88rem;color:rgba(255,255,255,0.95);line-height:1.4;">
-        <span style="font-weight:400;">Developed by </span><span style="font-weight:600;">Datum Studio</span>
-      </div>
+    <div style="font-family:'Geist',sans-serif;font-size:0.82rem;font-weight:600;color:white;letter-spacing:0.01em;">
+      <span style="font-weight:400;">Developed by </span><span style="font-weight:600;">Datum Studio</span>
     </div>
     <div style="text-align:right;color:rgba(255,255,255,0.72);font-size:0.72rem;line-height:1.7;">
       <div style="font-weight:500;">UPED · Sistema de Plantão</div>
@@ -1047,7 +1047,22 @@ async function salvar() {
     tarde:{ nome:document.getElementById('p3t-nome').value, obs:document.getElementById('p3t-obs').value }
   };
   const key = data+'_'+turno;
-  const reg={ key, data, turno, obs, equipe, atualizadoEm:new Date().toISOString() };
+  // Verifica se já existe para distinguir registro x edição
+  const jaExiste = (await getDoc(doc(db,'plantoes',key))).exists();
+  const agora = new Date().toISOString();
+  const autorAtual = usuarioAtual ? { nome: usuarioAtual.nome, uid: usuarioAtual.uid } : null;
+  const reg = { key, data, turno, obs, equipe, atualizadoEm: agora };
+  if(!jaExiste){
+    reg.registradoPor = autorAtual;
+    reg.registradoEm  = agora;
+  } else {
+    // Preserva quem registrou, adiciona quem editou
+    const docAtual = (await getDoc(doc(db,'plantoes',key))).data();
+    reg.registradoPor = docAtual.registradoPor || null;
+    reg.registradoEm  = docAtual.registradoEm  || null;
+    reg.editadoPor    = autorAtual;
+    reg.editadoEm     = agora;
+  }
   const btn=document.getElementById('btn-salvar');
   btn.disabled=true; btn.textContent='Salvando...';
   try {
@@ -1156,6 +1171,10 @@ function renderLista(lista) {
           ${window._isAdmin ? `<button class="btn-edit" onclick="editarPlantao('${r.key}')">✏️ Editar</button>` : ''}
           <button class="btn-wa" onclick="compartilharWA('${r.key}')">📲 WhatsApp</button>
           ${window._isAdmin ? `<button class="btn-del" onclick="abrirExcluir('${r.key}')">🗑️ Excluir</button>` : ''}
+        </div>
+        <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--cinza-borda);font-size:0.72rem;color:var(--cinza);line-height:1.8;">
+          ${r.registradoPor ? `📝 Registrado por: <strong>${r.registradoPor.nome}</strong>${r.registradoEm?' · '+new Date(r.registradoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}` : ''}
+          ${r.editadoPor ? `<br>✏️ Editado por: <strong>${r.editadoPor.nome}</strong>${r.editadoEm?' · '+new Date(r.editadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}` : ''}
         </div>
       </div>`;
     el.appendChild(div);
@@ -1816,8 +1835,12 @@ window.exportarPDFProfissionais = function() {
     <div class="secao">Profissionais Ativos — UPED · Unidade de Atendimento Pediátrico</div>
     <div style="margin-bottom:16px;font-size:11px;color:#64748B;">Total: <strong>${total} profissionais ativos</strong> em ${ativos.length} categorias · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
     <table>
-      <thead><tr><th>Profissional</th><th>Status</th></tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>${ativos.map(g=>`
+        <tr style="background:#E8F1FA;">
+          <td colspan="2" style="font-weight:700;color:#1B6CA8;padding:8px 10px;">${g.cat.label} (${g.profs.length})</td>
+        </tr>
+        ${g.profs.map((p,i)=>`<tr><td style="padding-left:20px;">${i+1}. ${p.nome}</td></tr>`).join('')}
+      `).join('')}</tbody>
     </table>`;
   gerarPDF('Relatório de Profissionais Ativos', html);
 };
