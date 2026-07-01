@@ -785,6 +785,23 @@
 </footer>
 
 <!-- FIREBASE -->
+<script>
+// Seta a data local ANTES do módulo ES6 carregar (evita UTC do browser)
+(function() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const local = y + '-' + m + '-' + day;
+  window.__dataHoje = local;
+  // Seta assim que o DOM estiver pronto
+  document.addEventListener('DOMContentLoaded', function() {
+    const el = document.getElementById('data-copia');
+    if (el) el.value = local;
+  });
+})();
+</script>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, Timestamp }
@@ -1438,12 +1455,11 @@ window.copiarDivergencias = async function() {
 };
 
 // ── INIT ──
-setHeaderDate();
-loadCorridas();
 document.getElementById('footer-ano').textContent = new Date().getFullYear();
 const inputDataCopia = document.getElementById('data-copia');
-if (inputDataCopia) inputDataCopia.value = hoje();
-renderHoje();
+if (inputDataCopia) inputDataCopia.value = window.__dataHoje || hoje();
+setHeaderDate();
+loadCorridas();
 
 // máscara valor
 document.getElementById('campo-valor').addEventListener('input', function() {
