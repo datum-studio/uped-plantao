@@ -624,14 +624,24 @@
 <!-- PAGE: HOJE -->
 <div class="page active" id="page-hoje">
   <div class="today-banner">
-    <div class="today-label">Total de hoje</div>
+    <div class="today-label" id="hoje-label">Total de hoje</div>
     <div class="today-value" id="total-hoje">R$ 0,00</div>
     <div class="today-meta" id="meta-hoje">0 corridas</div>
   </div>
 
+  <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px 16px;">
+    <span style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;">📅 Ver dia:</span>
+    <input type="date" id="data-copia" onchange="mudarDataHoje(this.value)"
+      style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:var(--surface);outline:none;">
+    <button onclick="document.getElementById('data-copia').value=hoje();mudarDataHoje(hoje());"
+      style="font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);border:1.5px solid var(--accent);border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap;font-family:Inter,sans-serif;">
+      Hoje
+    </button>
+  </div>
+
   <div class="card">
     <div class="section-header">
-      <span class="section-title">Corridas de hoje</span>
+      <span class="section-title" id="lista-hoje-titulo">Corridas de hoje</span>
     </div>
     <div id="lista-hoje">
       <div class="loading">Carregando...</div>
@@ -639,9 +649,8 @@
   </div>
 
   <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-    <input type="date" id="data-copia" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:var(--surface);outline:none;">
-    <button class="btn-share" onclick="compartilharWhatsApp()" style="flex:none;width:auto;padding:12px 16px;white-space:nowrap;">
-      <span>📋</span> Copiar lista
+    <button class="btn-share" onclick="compartilharWhatsApp()" style="flex:1;">
+      <span>📋</span> Copiar lista do dia
     </button>
   </div>
 </div>
@@ -805,7 +814,13 @@ let periodoAtivo = 'semana';
 const fmtBRL = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtData = d => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtHora = d => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 const isoDate = d => {
   const dt = new Date(d);
   const y = dt.getFullYear();
@@ -853,23 +868,32 @@ async function loadCorridas() {
 
 // ── HOJE ──
 function renderHoje() {
-  const hj = hoje();
+  const dataSel = document.getElementById('data-copia')?.value || hoje();
+  const ehHoje = dataSel === hoje();
   const corridas = todasCorridas
-    .filter(c => isoDate(c.timestamp.toDate()) === hj)
+    .filter(c => isoDate(c.timestamp.toDate()) === dataSel)
     .slice()
     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-  const total = corridas.reduce((s, c) => s + Number(c.valor), 0);
-  document.getElementById('total-hoje').textContent = fmtBRL(total);
+  const total = corridas.reduce((s, c) => s + (c.valor ? Number(c.valor) : 0), 0);
+
+  document.getElementById('hoje-label').textContent = ehHoje ? 'Total de hoje' : 'Total do dia';
+  document.getElementById('total-hoje').textContent = fmtBRL(total || null);
   document.getElementById('meta-hoje').textContent =
-    `${corridas.length} corrida${corridas.length !== 1 ? 's' : ''} hoje`;
+    `${corridas.length} corrida${corridas.length !== 1 ? 's' : ''}${ehHoje ? ' hoje' : ' neste dia'}`;
+  document.getElementById('lista-hoje-titulo').textContent =
+    ehHoje ? 'Corridas de hoje' : `Corridas de ${fmtData(dataSel + 'T12:00:00')}`;
 
   const lista = document.getElementById('lista-hoje');
   if (corridas.length === 0) {
-    lista.innerHTML = `<div class="empty"><div class="empty-icon">🚗</div><div class="empty-text">Nenhuma corrida registrada hoje.<br>Toque em <strong>+</strong> para adicionar.</div></div>`;
+    lista.innerHTML = `<div class="empty"><div class="empty-icon">🚗</div><div class="empty-text">Nenhuma corrida registrada${ehHoje ? ' hoje' : ' neste dia'}.<br>${ehHoje ? 'Toque em <strong>+</strong> para adicionar.' : ''}</div></div>`;
     return;
   }
   lista.innerHTML = corridas.map((c, i) => corridaHTML(c, i, corridas.length)).join('');
 }
+
+window.mudarDataHoje = function(val) {
+  renderHoje();
+};
 
 // ── HISTORICO ──
 window.renderHistorico = function() {
@@ -1419,6 +1443,7 @@ loadCorridas();
 document.getElementById('footer-ano').textContent = new Date().getFullYear();
 const inputDataCopia = document.getElementById('data-copia');
 if (inputDataCopia) inputDataCopia.value = hoje();
+renderHoje();
 
 // máscara valor
 document.getElementById('campo-valor').addEventListener('input', function() {
