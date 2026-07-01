@@ -406,8 +406,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     </div>
     <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🛏️ Pacientes Internados</div>
     <div class="prod-grid" id="censo-campos-internados">
-      <div class="prod-item"><label>🐠 Geral</label><input type="number" id="cs-nemo" min="0" value="0"></div>
-      <div class="prod-item"><label>🐟 Respiratória</label><input type="number" id="cs-dory" min="0" value="0"></div>
+      <div class="prod-item"><label>Geral</label><input type="number" id="cs-nemo" min="0" value="0"></div>
+      <div class="prod-item"><label>Respiratória</label><input type="number" id="cs-dory" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Verm. (OBS)</label><input type="number" id="cs-vermelha-obs" min="0" value="0"></div>
       <div class="prod-item"><label>💊 Obs. Geral (Medicação)</label><input type="number" id="cs-obs-medicacao" min="0" value="0"></div>
@@ -1222,8 +1222,8 @@ function renderDetalhe(r) {
     html+=`<div class="det-cat" style="grid-column:1/-1;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
       <div class="det-cat-titulo" style="color:#1D4ED8;">🏥 Censo do Plantão</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
-        <span style="font-size:0.8rem;">🐠 Geral: <b>${censo.nemo||0}</b></span>
-        <span style="font-size:0.8rem;">🐟 Respiratória: <b>${censo.dory||0}</b></span>
+        <span style="font-size:0.8rem;">Geral: <b>${censo.nemo||0}</b></span>
+        <span style="font-size:0.8rem;">Respiratória: <b>${censo.dory||0}</b></span>
         <span style="font-size:0.8rem;">🔴 S.Verm.: <b>${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}</b></span>
         <span style="font-size:0.8rem;font-weight:700;color:#1D4ED8;">Total: ${censo.totalInternados||0}</span>
         <span style="font-size:0.8rem;color:var(--cinza);">|</span>
@@ -1732,8 +1732,8 @@ function renderInicio(){
           </div>
           <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
             <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Enfermarias</div>
-            <div style="font-size:0.82rem;">🐠 Geral: <b>${ultimoCenso.nemo||0}</b></div>
-            <div style="font-size:0.82rem;">🐟 Respiratória: <b>${ultimoCenso.dory||0}</b></div>
+            <div style="font-size:0.82rem;">Geral: <b>${ultimoCenso.nemo||0}</b></div>
+            <div style="font-size:0.82rem;">Respiratória: <b>${ultimoCenso.dory||0}</b></div>
             <div style="font-size:0.82rem;">🔴 Sala Verm.: <b>${ultimoCenso.vermelha||0}${ultimoCenso.vermelha_obs?'+'+ultimoCenso.vermelha_obs+'(OBS)':''}</b></div>
           </div>
           <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
@@ -2146,7 +2146,7 @@ const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha','vermelha_obs','obs_medicaca
 const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','isolamento'];
 const CAMPOS_CENSO      = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
 const LABELS_CENSO = {
-  nemo:'🐠 Geral', dory:'🐟 Respiratória',
+  nemo:'Geral', dory:'Respiratória',
   vermelha:'🔴 Sala Vermelha', vermelha_obs:'🔴 Sala Verm. (OBS)',
   obs_medicacao:'💊 Obs. Geral (Medicação)',
   regulacao:'⏳ Ag. Regulação', intubados:'💨 Intubados',
