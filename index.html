@@ -406,8 +406,8 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
     </div>
     <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🛏️ Pacientes Internados</div>
     <div class="prod-grid" id="censo-campos-internados">
-      <div class="prod-item"><label>🐠 Geral (Nemo)</label><input type="number" id="cs-nemo" min="0" value="0"></div>
-      <div class="prod-item"><label>🐟 Respiratória (Dory)</label><input type="number" id="cs-dory" min="0" value="0"></div>
+      <div class="prod-item"><label>🐠 Geral</label><input type="number" id="cs-nemo" min="0" value="0"></div>
+      <div class="prod-item"><label>🐟 Respiratória</label><input type="number" id="cs-dory" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
       <div class="prod-item"><label>🔴 Sala Verm. (OBS)</label><input type="number" id="cs-vermelha-obs" min="0" value="0"></div>
       <div class="prod-item"><label>💊 Obs. Geral (Medicação)</label><input type="number" id="cs-obs-medicacao" min="0" value="0"></div>
@@ -1095,6 +1095,7 @@ async function salvar() {
       dadosCenso[jaExisteCenso?'editadoEm':'registradoEm']=new Date().toISOString();
       await setDoc(doc(db,'censo',key),dadosCenso);
     }
+    btn.disabled=false; btn.textContent='💾 Registrar Plantão';
     abrirModalConfirmacao(reg);
   } catch(e){ toast('❌ '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent='💾 Registrar Plantão'; }
 }
@@ -1221,8 +1222,8 @@ function renderDetalhe(r) {
     html+=`<div class="det-cat" style="grid-column:1/-1;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
       <div class="det-cat-titulo" style="color:#1D4ED8;">🏥 Censo do Plantão</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
-        <span style="font-size:0.8rem;">🐠 Nemo: <b>${censo.nemo||0}</b></span>
-        <span style="font-size:0.8rem;">🐟 Dory: <b>${censo.dory||0}</b></span>
+        <span style="font-size:0.8rem;">🐠 Geral: <b>${censo.nemo||0}</b></span>
+        <span style="font-size:0.8rem;">🐟 Respiratória: <b>${censo.dory||0}</b></span>
         <span style="font-size:0.8rem;">🔴 S.Verm.: <b>${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}</b></span>
         <span style="font-size:0.8rem;font-weight:700;color:#1D4ED8;">Total: ${censo.totalInternados||0}</span>
         <span style="font-size:0.8rem;color:var(--cinza);">|</span>
@@ -1307,7 +1308,7 @@ function gerarTextoWA(r) {
     txt+=`*CENSO DO PLANTÃO*\n`;
     const svObs=censo.vermelha_obs||0;
     const svTxt=svObs>0?`${censo.vermelha||0}+${svObs}(OBS)`:`${censo.vermelha||0}`;
-    txt+=`*Internados:* Nemo ${censo.nemo||0} · Dory ${censo.dory||0} · Sala Verm. ${svTxt} · *Total: ${censo.totalInternados||0}*\n`;
+    txt+=`*Internados:* Geral ${censo.nemo||0} · Respiratória ${censo.dory||0} · Sala Verm. ${svTxt} · *Total: ${censo.totalInternados||0}*\n`;
     txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
     txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
   }
@@ -1589,15 +1590,27 @@ async function carregarUsuarios() {
   el.innerHTML = snap.docs.map(d=>{
     const u=d.data();
     const isMaster = u.email === EMAIL_MASTER;
-    if(isMaster) return ''; // conta master não aparece na lista
-    return `<div class="prof-item">
-      <span class="prof-item-nome">${u.nome}</span>
+    if(isMaster) return '';
+    return `<div class="prof-item" style="flex-wrap:wrap;gap:6px;align-items:center;">
+      <div style="flex:1;min-width:140px;">
+        <div style="font-weight:600;font-size:0.85rem;">${u.nome}</div>
+        <div style="font-size:0.74rem;color:var(--cinza);">${u.email}</div>
+      </div>
       <span class="${u.perfil==='admin'?'badge-ativo':'badge-inativo'}">${u.perfil==='admin'?'Admin':'Recepção'}</span>
+      <button onclick="resetarSenhaUsuario('${u.email}','${u.nome.replace(/'/g,"\\'")}')" style="padding:4px 10px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:6px;font-size:0.74rem;font-weight:600;cursor:pointer;">🔑 Reset senha</button>
       <button class="btn-excluir-p" onclick="removerUsuario('${d.id}','${u.email}','${u.nome.replace(/'/g,"\\'")}')">🗑️</button>
     </div>`;
   }).join('');
 }
 window.carregarUsuarios=carregarUsuarios;
+
+window.resetarSenhaUsuario = async function(email, nome) {
+  if(!confirm(`Enviar e-mail de redefinição de senha para ${nome} (${email})?`)) return;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    toast(`✅ E-mail de redefinição enviado para ${nome}.`);
+  } catch(e) { toast('❌ Erro: '+e.message,'#E53E3E'); }
+};
 
 window.removerUsuario = async function(uid, email, nome) {
   if(email === EMAIL_MASTER){ toast('⚠️ Esta conta não pode ser removida.','#E53E3E'); return; }
@@ -1719,8 +1732,8 @@ function renderInicio(){
           </div>
           <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
             <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Enfermarias</div>
-            <div style="font-size:0.82rem;">🐠 Nemo: <b>${ultimoCenso.nemo||0}</b></div>
-            <div style="font-size:0.82rem;">🐟 Dory: <b>${ultimoCenso.dory||0}</b></div>
+            <div style="font-size:0.82rem;">🐠 Geral: <b>${ultimoCenso.nemo||0}</b></div>
+            <div style="font-size:0.82rem;">🐟 Respiratória: <b>${ultimoCenso.dory||0}</b></div>
             <div style="font-size:0.82rem;">🔴 Sala Verm.: <b>${ultimoCenso.vermelha||0}${ultimoCenso.vermelha_obs?'+'+ultimoCenso.vermelha_obs+'(OBS)':''}</b></div>
           </div>
           <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
@@ -1761,7 +1774,7 @@ function gerarPDF(titulo, conteudoHTML) {
   <div class="sub">${titulo} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
   ${conteudoHTML}
   <footer>
-    <span>Datum Studio · Análise · Gestão · Tecnologia</span>
+    <span>Developed by Datum Studio</span>
     <span>UPED · Sistema de Plantão © ${new Date().getFullYear()}</span>
   </footer>
   <script>window.onload=()=>{ window.print(); }<\/script>
@@ -1871,7 +1884,7 @@ window.exportarPDFCenso=function(){
   const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
   const html=`
     <div class="secao">Período: ${per}</div>
-    <table><thead><tr><th>Data</th><th>Turno</th><th>Nemo</th><th>Dory</th><th>S.Verm.</th><th>S.Verm.(OBS)</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Isolamento</th></tr></thead>
+    <table><thead><tr><th>Data</th><th>Turno</th><th>Geral</th><th>Respiratória</th><th>S.Verm.</th><th>S.Verm.(OBS)</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Isolamento</th></tr></thead>
     <tbody>${[...dados].reverse().map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.nemo||0}</td><td>${r.dory||0}</td><td>${r.vermelha||0}</td><td>${r.vermelha_obs||0}</td><td><b>${r.totalInternados||0}</b></td><td>${r.regulacao||0}</td><td>${r.intubados||0}</td><td>${r.cpap||0}</td><td>${r.vni||0}</td><td>${r.isolamento||0}</td></tr>`).join('')}</tbody></table>`;
   gerarPDF('Compilado de Censo do Plantão',html);
 };
@@ -2133,7 +2146,7 @@ const CAMPOS_CENSO_INT  = ['nemo','dory','vermelha','vermelha_obs','obs_medicaca
 const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','isolamento'];
 const CAMPOS_CENSO      = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
 const LABELS_CENSO = {
-  nemo:'🐠 Geral (Nemo)', dory:'🐟 Respiratória (Dory)',
+  nemo:'🐠 Geral', dory:'🐟 Respiratória',
   vermelha:'🔴 Sala Vermelha', vermelha_obs:'🔴 Sala Verm. (OBS)',
   obs_medicacao:'💊 Obs. Geral (Medicação)',
   regulacao:'⏳ Ag. Regulação', intubados:'💨 Intubados',
