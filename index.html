@@ -331,6 +331,7 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
  <button class="tab-btn" onclick="switchTab('registrar')">Registrar Plantão</button>
  <button class="tab-btn" id="tab-consultar" onclick="switchTab('consultar')">Consultar Plantões</button>
  <button class="tab-btn" onclick="switchTab('producao')">Registro de Produção</button>
+ <button class="tab-btn" id="tab-cons-prod" onclick="switchTab('consprod')">Consultar Produção</button>
  <button class="tab-btn" onclick="switchTab('gestao')">Relatórios</button>
  <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')" style="display:none;">Painel Admin</button>
 </div>
@@ -508,6 +509,14 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
  </div>
  <button class="btn-salvar" id="btn-salvar-prod" onclick="salvarProducao()">Registrar Produção</button>
  </div>
+</div>
+
+<div class="tab-panel" id="panel-consprod">
+  <div class="card">
+    <div class="card-title" style="display:block;">Consultar Produção — Hoje</div>
+    <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">Plantões registrados hoje com opção de reenvio via WhatsApp.</p>
+    <div id="consprod-lista"></div>
+  </div>
 </div>
 
 <!-- ===== GESTÃO ===== -->
@@ -1117,6 +1126,7 @@ onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
  const panelConsultar=document.getElementById('panel-consultar');
  const panelInicio=document.getElementById('panel-inicio');
  if(panelInicio?.classList.contains('active')) renderInicio();
+ if(document.getElementById('panel-consprod')?.classList.contains('active')) renderConsProd();
  if(panelConsultar.classList.contains('active')){
  if(document.getElementById('view-categoria').style.display==='none') renderLista(plantoesFiltrados());
  else renderTabelaCat();
@@ -1646,6 +1656,7 @@ window.switchTab=function(tab, semSenha){
  else { document.getElementById('fi-cat').innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join(''); renderTabelaCat(); }
  }
  if(tab==='producao'){ verificarBloqueio(); }
+ if(tab==='consprod') renderConsProd();
  if(tab==='gestao'){ renderDashboard(); filtrarProducao(); }
  if(tab==='admin'){ carregarUsuarios(); renderListaProfs(); }
 };
@@ -1672,26 +1683,79 @@ function aplicarPermissoes(perfil) {
  if(tabGestao) tabGestao.style.display = adm ? '' : 'none';
  const tabAdmin = document.getElementById('tab-admin');
  if(tabAdmin) tabAdmin.style.display = adm ? '' : 'none';
+ // Consultar Produção — visível para todos
+ const tabConsProd = document.getElementById('tab-cons-prod');
+ if(tabConsProd) tabConsProd.style.display = '';
 
  // Cards só para Recepção — admin já tem abas no topo
  const cardsEl = document.getElementById('inicio-cards');
  if(cardsEl){
- if(adm){
- cardsEl.style.display='none';
- } else {
- cardsEl.style.display='grid';
- cardsEl.innerHTML = [
- { tab:'registrar', icon:'', titulo:'Registrar Plantão', desc:'Cadastre a escala do plantão atual' },
- { tab:'consultar', icon:'', titulo:'Consultar Plantões', desc:'Visualize os plantões registrados' },
- { tab:'producao', icon:'', titulo:'Registro de Produção', desc:'Registre os atendimentos do plantão' },
- ].map(c=>`<div class="inicio-card" onclick="switchTab('${c.tab}')">
- <div class="inicio-card-icon">${c.icon}</div>
- <div class="inicio-card-titulo">${c.titulo}</div>
- <div class="inicio-card-desc">${c.desc}</div>
- </div>`).join('');
- }
+   if(adm){
+     cardsEl.style.display='none';
+   } else {
+     cardsEl.style.display='grid';
+     cardsEl.innerHTML = [
+       { tab:'registrar',  titulo:'Registrar Plantão',    desc:'Cadastre a escala do plantão atual' },
+       { tab:'consultar',  titulo:'Consultar Plantões',    desc:'Visualize os plantões registrados' },
+       { tab:'producao',   titulo:'Registro de Produção',  desc:'Registre os atendimentos do plantão' },
+       { tab:'consprod',   titulo:'Consultar Produção',    desc:'Reenvie produção e censo via WhatsApp' },
+     ].map(c=>`<div class="inicio-card" onclick="switchTab('${c.tab}')">
+       <div class="inicio-card-icon"></div>
+       <div class="inicio-card-titulo">${c.titulo}</div>
+       <div class="inicio-card-desc">${c.desc}</div>
+     </div>`).join('');
+   }
  }
 }
+
+function renderConsProd(){
+  const hoje = new Date().toISOString().slice(0,10);
+  const plantoesHoje = plantoes.filter(r=>r.data===hoje)
+    .sort((a,b)=>a.turno==='DIURNO'?-1:1);
+  const el = document.getElementById('consprod-lista');
+  if(!el) return;
+  if(!plantoesHoje.length){
+    el.innerHTML='<div class="empty"><div style="font-size:2rem;margin-bottom:8px;"></div><div>Nenhum plantão registrado hoje ainda.</div></div>';
+    return;
+  }
+  const [,m,d]=hoje.split('-');
+  el.innerHTML = plantoesHoje.map(r=>{
+    const turnoLabel = r.turno==='DIURNO'?'Diurno':'Noturno';
+    const prod = producoes.find(p=>p.key===r.key);
+    const censo = censos.find(c=>c.key===r.key);
+    const prodInfo = prod
+      ? `Total: <b>${prod.total||0}</b> atend. · Azul: ${prod.azul||0} · Verde: ${prod.verde||0} · Amarela: ${prod.amarela||0} · Vermelha: ${prod.vermelha||0}`
+      : '<span style="color:var(--cinza);">Produção não registrada ainda.</span>';
+    const censoInfo = censo
+      ? `Internados: <b>${censo.totalInternados||0}</b> · Geral: ${censo.nemo||0} · Resp.: ${censo.dory||0} · S.Verm.: ${censo.vermelha||0}`
+      : '<span style="color:var(--cinza);">Censo não registrado ainda.</span>';
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="font-weight:700;font-size:1rem;color:var(--azul);margin-bottom:10px;">${d}/${m} — ${turnoLabel}</div>
+      <div style="font-size:0.83rem;margin-bottom:6px;"><b>Producao:</b> ${prodInfo}</div>
+      <div style="font-size:0.83rem;margin-bottom:12px;"><b>Censo:</b> ${censoInfo}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${prod?`<button onclick="compartilharWAProd(${JSON.stringify(prod).replace(/"/g,'&quot;')})" style="padding:9px 16px;background:#25D366;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.85rem;">Enviar Producao no WhatsApp</button>`:''}
+        ${censo?`<button onclick="compartilharWACenso('${r.key}')" style="padding:9px 16px;background:#128C7E;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.85rem;">Enviar Censo no WhatsApp</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.compartilharWACenso = function(key) {
+  const censo = censos.find(c=>c.key===key);
+  if(!censo) return;
+  const [a,m,d]=censo.data.split('-');
+  const ds=DIAS[new Date(censo.data+'T12:00:00').getDay()];
+  let txt=`*CENSO DO PLANTÃO*\n*${d}/${m}/${a} — ${ds} · ${censo.turno}*\n\n`;
+  const svObs=censo.vermelha_obs||0;
+  const svTxt=svObs>0?`${censo.vermelha||0}+${svObs}(OBS)`:`${censo.vermelha||0}`;
+  txt+=`*Internados:* Geral ${censo.nemo||0} · Respiratória ${censo.dory||0} · Sala Verm. ${svTxt} · *Total: ${censo.totalInternados||0}*\n`;
+  if(censo.obs_medicacao) txt+=`*Obs. Geral (Medicação):* ${censo.obs_medicacao}\n`;
+  txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
+  txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0} · *Isolamento:* ${censo.isolamento||0}\n`;
+  if(usuarioAtual) txt+=`\n_Registrado por: ${usuarioAtual.nome}_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+};
 
 function renderInicio(){
  // Garante cards corretos para o perfil atual
@@ -1894,12 +1958,11 @@ window.exportarPDFCenso=function(){
 // ===== PRODUÇÃO =====
 onSnapshot(query(collection(db,'producao'),orderBy('data','desc')),snap=>{
  producoes=snap.docs.map(d=>({...d.data(),key:d.id}));
- // Atualiza formulário de produção se estiver ativo
  const panelProd=document.getElementById('panel-producao');
  if(panelProd?.classList.contains('active')) verificarBloqueio();
- // Atualiza histórico de produção se sub-aba estiver visível
  const gsecHist=document.getElementById('gsec-hist');
  if(gsecHist && gsecHist.style.display!=='none') filtrarProducao();
+ if(document.getElementById('panel-consprod')?.classList.contains('active')) renderConsProd();
 });
 
 CAMPOS_FICHAS.forEach(c=>{
