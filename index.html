@@ -1733,7 +1733,14 @@ function renderConsProd(){
   const fim = document.getElementById('cp-fim')?.value;
   const trn = document.getElementById('cp-turno')?.value;
 
-  let lista = [...plantoes].sort((a,b)=>b.data.localeCompare(a.data)||(a.turno==='DIURNO'?-1:1));
+  let lista = [...plantoes].sort((a,b)=>{
+    const dataDiff = b.data.localeCompare(a.data);
+    if(dataDiff !== 0) return dataDiff;
+    // Mesmo dia: Diurno antes de Noturno
+    if(a.turno==='DIURNO' && b.turno==='NOTURNO') return -1;
+    if(a.turno==='NOTURNO' && b.turno==='DIURNO') return 1;
+    return 0;
+  });
   if(ini) lista = lista.filter(r=>r.data>=ini);
   if(fim) lista = lista.filter(r=>r.data<=fim);
   if(trn) lista = lista.filter(r=>r.turno===trn);
