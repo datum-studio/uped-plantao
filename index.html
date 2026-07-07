@@ -513,8 +513,18 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 
 <div class="tab-panel" id="panel-consprod">
   <div class="card">
-    <div class="card-title" style="display:block;">Consultar Produção — Hoje</div>
-    <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">Plantões registrados hoje com opção de reenvio via WhatsApp.</p>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>Consultar Producao e Censo</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="cp-ini"></div>
+        <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="cp-fim"></div>
+        <div class="form-group" style="min-width:100px;"><label>Turno</label>
+          <select id="cp-turno"><option value="">Todos</option><option value="DIURNO">Diurno</option><option value="NOTURNO">Noturno</option></select>
+        </div>
+        <button class="btn-filtrar" onclick="renderConsProd()" style="margin-bottom:0">Filtrar</button>
+        <button class="btn-limpar" onclick="limparConsProd()" style="margin-bottom:0">Limpar</button>
+      </div>
+    </div>
     <div id="consprod-lista"></div>
   </div>
 </div>
@@ -1656,7 +1666,12 @@ window.switchTab=function(tab, semSenha){
  else { document.getElementById('fi-cat').innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join(''); renderTabelaCat(); }
  }
  if(tab==='producao'){ verificarBloqueio(); }
- if(tab==='consprod') renderConsProd();
+ if(tab==='consprod'){
+   const {ini,fim}=periodoUltimoMes();
+   const elIni=document.getElementById('cp-ini'); if(elIni&&!elIni.value) elIni.valueAsDate=ini;
+   const elFim=document.getElementById('cp-fim'); if(elFim&&!elFim.value) elFim.valueAsDate=fim;
+   renderConsProd();
+ }
  if(tab==='gestao'){ renderDashboard(); filtrarProducao(); }
  if(tab==='admin'){ carregarUsuarios(); renderListaProfs(); }
 };
@@ -1709,37 +1724,64 @@ function aplicarPermissoes(perfil) {
 }
 
 function renderConsProd(){
-  const hoje = new Date().toISOString().slice(0,10);
-  const plantoesHoje = plantoes.filter(r=>r.data===hoje)
-    .sort((a,b)=>a.turno==='DIURNO'?-1:1);
   const el = document.getElementById('consprod-lista');
   if(!el) return;
-  if(!plantoesHoje.length){
-    el.innerHTML='<div class="empty"><div style="font-size:2rem;margin-bottom:8px;"></div><div>Nenhum plantão registrado hoje ainda.</div></div>';
+
+  // Filtros
+  const ini = document.getElementById('cp-ini')?.value;
+  const fim = document.getElementById('cp-fim')?.value;
+  const trn = document.getElementById('cp-turno')?.value;
+
+  let lista = [...plantoes].sort((a,b)=>b.data.localeCompare(a.data)||(a.turno==='DIURNO'?-1:1));
+  if(ini) lista = lista.filter(r=>r.data>=ini);
+  if(fim) lista = lista.filter(r=>r.data<=fim);
+  if(trn) lista = lista.filter(r=>r.turno===trn);
+
+  if(!lista.length){
+    el.innerHTML='<div class="empty"><div style="font-size:2rem;margin-bottom:8px;"></div><div>Nenhum plantão encontrado.</div></div>';
     return;
   }
-  const [,m,d]=hoje.split('-');
-  el.innerHTML = plantoesHoje.map(r=>{
+
+  el.innerHTML = lista.map(r=>{
+    const [a,m,d]=r.data.split('-');
+    const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
     const turnoLabel = r.turno==='DIURNO'?'Diurno':'Noturno';
     const prod = producoes.find(p=>p.key===r.key);
     const censo = censos.find(c=>c.key===r.key);
     const prodInfo = prod
-      ? `Total: <b>${prod.total||0}</b> atend. · Azul: ${prod.azul||0} · Verde: ${prod.verde||0} · Amarela: ${prod.amarela||0} · Vermelha: ${prod.vermelha||0}`
-      : '<span style="color:var(--cinza);">Produção não registrada ainda.</span>';
+      ? `Total: <b>${prod.total||0}</b> atend. &nbsp;·&nbsp; Azul: ${prod.azul||0} · Verde: ${prod.verde||0} · Amarela: ${prod.amarela||0} · Vermelha: ${prod.vermelha||0}`
+      : '<span style="color:var(--cinza);">Produção não registrada.</span>';
     const censoInfo = censo
-      ? `Internados: <b>${censo.totalInternados||0}</b> · Geral: ${censo.nemo||0} · Resp.: ${censo.dory||0} · S.Verm.: ${censo.vermelha||0}`
-      : '<span style="color:var(--cinza);">Censo não registrado ainda.</span>';
-    return `<div class="card" style="margin-bottom:12px;">
-      <div style="font-weight:700;font-size:1rem;color:var(--azul);margin-bottom:10px;">${d}/${m} — ${turnoLabel}</div>
-      <div style="font-size:0.83rem;margin-bottom:6px;"><b>Producao:</b> ${prodInfo}</div>
-      <div style="font-size:0.83rem;margin-bottom:12px;"><b>Censo:</b> ${censoInfo}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${prod?`<button onclick="compartilharWAProd(${JSON.stringify(prod).replace(/"/g,'&quot;')})" style="padding:9px 16px;background:#25D366;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.85rem;">Enviar Producao no WhatsApp</button>`:''}
-        ${censo?`<button onclick="compartilharWACenso('${r.key}')" style="padding:9px 16px;background:#128C7E;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.85rem;">Enviar Censo no WhatsApp</button>`:''}
+      ? `Internados: <b>${censo.totalInternados||0}</b> &nbsp;·&nbsp; Geral: ${censo.nemo||0} · Resp.: ${censo.dory||0} · S.Verm.: ${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}`
+      : '<span style="color:var(--cinza);">Censo não registrado.</span>';
+    return `<div class="prod-hist-card">
+      <div class="prod-hist-header" onclick="toggleProdCard(this)">
+        <span>${d}/${m}/${a} — ${ds}</span>
+        <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${turnoLabel}</span>
+        <span style="margin-left:auto;font-size:0.78rem;color:var(--cinza);">
+          ${prod?'Prod. registrada':'Sem prod.'} &nbsp;|&nbsp; ${censo?'Censo registrado':'Sem censo'}
+        </span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="prod-hist-body">
+        <div style="font-size:0.83rem;margin-bottom:6px;"><b>Producao:</b> ${prodInfo}</div>
+        <div style="font-size:0.83rem;margin-bottom:12px;"><b>Censo:</b> ${censoInfo}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${prod?`<button onclick="compartilharWAProd(${JSON.stringify(prod).replace(/"/g,'&quot;')})" style="padding:8px 14px;background:#25D366;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.83rem;">Enviar Producao no WhatsApp</button>`:''}
+          ${censo?`<button onclick="compartilharWACenso('${r.key}')" style="padding:8px 14px;background:#128C7E;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.83rem;">Enviar Censo no WhatsApp</button>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
 }
+
+window.limparConsProd=function(){
+  const {ini,fim}=periodoUltimoMes();
+  const elIni=document.getElementById('cp-ini'); if(elIni) elIni.valueAsDate=ini;
+  const elFim=document.getElementById('cp-fim'); if(elFim) elFim.valueAsDate=fim;
+  const elTrn=document.getElementById('cp-turno'); if(elTrn) elTrn.value='';
+  renderConsProd();
+};
 
 window.compartilharWACenso = function(key) {
   const censo = censos.find(c=>c.key===key);
