@@ -1026,38 +1026,43 @@ async function carregarPlantao() {
  const chave = data + '_' + turno;
  const snap = await getDoc(doc(db, 'plantoes', chave));
  if (snap.exists()) {
- const r = snap.data();
- editKey = chave;
- document.getElementById('f-obs').value = r.obs || '';
- document.getElementById('p3m-nome').value = r.equipe?.p3?.manha?.nome || '';
- document.getElementById('p3m-obs').value = r.equipe?.p3?.manha?.obs || '';
- document.getElementById('p3t-nome').value = r.equipe?.p3?.tarde?.nome || '';
- document.getElementById('p3t-obs').value = r.equipe?.p3?.tarde?.obs || '';
- initEstado();
- CATS.filter(c=>c.id!=='p3').forEach(cat=>{
- const pp = r.equipe?.[cat.id];
- if (pp && pp.length> 0) estado[cat.id] = pp.map(p=>({nome:p.nome||'',turno:p.turno||turno,obs:p.obs||''}));
- });
- document.getElementById('msg-edit').textContent = ` Editando: ${fmtData(data)} — ${turno}`;
- document.getElementById('btn-salvar').textContent = ' Salvar Alterações';
+   // Documento existe nesta data/turno — carrega
+   const r = snap.data();
+   editKey = chave;
+   document.getElementById('f-obs').value = r.obs || '';
+   document.getElementById('p3m-nome').value = r.equipe?.p3?.manha?.nome || '';
+   document.getElementById('p3m-obs').value = r.equipe?.p3?.manha?.obs || '';
+   document.getElementById('p3t-nome').value = r.equipe?.p3?.tarde?.nome || '';
+   document.getElementById('p3t-obs').value = r.equipe?.p3?.tarde?.obs || '';
+   initEstado();
+   CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+     const pp = r.equipe?.[cat.id];
+     if (pp && pp.length > 0) estado[cat.id] = pp.map(p=>({nome:p.nome||'',turno:p.turno||turno,obs:p.obs||''}));
+   });
+   document.getElementById('msg-edit').textContent = `Editando: ${fmtData(data)} — ${turno}`;
+   document.getElementById('btn-salvar').textContent = 'Salvar Alterações';
+ } else if (editKey) {
+   // Estamos em modo edição e a nova data/turno está vazia — preserva os dados
+   // só atualiza o label para indicar que vai criar novo registro
+   document.getElementById('msg-edit').textContent = `Salvando em: ${fmtData(data)} — ${turno} (nova data)`;
+   document.getElementById('btn-salvar').textContent = 'Salvar Alterações';
  } else {
- editKey = null;
- document.getElementById('f-obs').value = '';
- document.getElementById('p3m-nome').value = '';
- document.getElementById('p3m-obs').value = '';
- document.getElementById('p3t-nome').value = '';
- document.getElementById('p3t-obs').value = '';
- document.getElementById('msg-edit').textContent = '';
- document.getElementById('btn-salvar').textContent = ' Registrar Plantão';
- // Reseta estado — slots vazios recebem o turno atual do plantão
- initEstado();
- // Slots com nome preservam o turno escolhido; slots vazios recebem o novo turno
- CATS.filter(c=>c.id!=='p3').forEach(cat=>{
- (estado[cat.id]||[]).forEach(slot=>{ if(!slot.nome) slot.turno = turno; });
- });
+   // Novo registro — limpa tudo
+   editKey = null;
+   document.getElementById('f-obs').value = '';
+   document.getElementById('p3m-nome').value = '';
+   document.getElementById('p3m-obs').value = '';
+   document.getElementById('p3t-nome').value = '';
+   document.getElementById('p3t-obs').value = '';
+   document.getElementById('msg-edit').textContent = '';
+   document.getElementById('btn-salvar').textContent = 'Registrar Plantão';
+   initEstado();
+   CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+     (estado[cat.id]||[]).forEach(slot=>{ if(!slot.nome) slot.turno = turno; });
+   });
  }
  rebuildarForm();
- verificarBloqueoCenso(); // sincroniza censo com data/turno selecionados
+ verificarBloqueoCenso();
 }
 
 document.getElementById('f-data').addEventListener('change', carregarPlantao);
