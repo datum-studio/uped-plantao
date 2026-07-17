@@ -775,8 +775,8 @@ function siglaEvolucao(data) {
 // Peso de cada sigla na tabela
 function pesoSigla(sigla, catId, data) {
   if(catId==='evolucao') return siglaEvolucao(data).peso;
-  if(catId==='p3') return 0.5; // EM ou ET
-  return 1; // todas as demais
+  if(sigla==='M' || sigla==='T' || sigla==='EM' || sigla==='ET') return 0.5;
+  return 1; // D e N valem 1
 }
 // Formata total: inteiro se sem decimal, .1 se necessário
 function fmtTotal(v) {
@@ -1433,12 +1433,15 @@ window.renderTabelaCat=function(){
        });
      } else {
        (r.equipe?.[cat.id]||[]).forEach(p=>{
-         if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0], peso:1});
+         if(p.nome===nome){
+           const sigla=SIGLAS[p.turno]||p.turno[0];
+           itens.push({sigla, peso:pesoSigla(sigla, cat.id, data)});
+         }
        });
      }
    });
-   if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EM+EM ou ET+ET
-   if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EVS+EVS etc
+   if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
+   if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
    if(itens.length){
      const peso=itens.reduce((s,x)=>s+x.peso,0);
      total=Math.round((total+peso)*10)/10;
@@ -1488,7 +1491,10 @@ window.exportarCatCSV=function(){
          });
        } else {
          (r.equipe?.[cat.id]||[]).forEach(p=>{
-           if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0],peso:1});
+           if(p.nome===nome){
+             const sigla=SIGLAS[p.turno]||p.turno[0];
+             itens.push({sigla, peso:pesoSigla(sigla, cat.id, data)});
+           }
          });
        }
      });
