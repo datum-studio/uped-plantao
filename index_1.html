@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPED · Sistema de Plantão</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1B6CA8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="UPED">
+<link rel="icon" href="./icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+ --azul:#1B6CA8; --azul-claro:#E8F1FA; --azul-mid:#3D8BCD;
+ --verde:#2E7D57; --cinza:#64748B; --cinza-claro:#F0F4F8;
+ --cinza-borda:#CBD5E1; --vermelho:#E53E3E; --amarelo:#F59E0B; --texto:#1E293B;
+}
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--cinza-claro); color:var(--texto); min-height:100vh; }
+header { background:var(--azul); color:white; padding:14px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+header h1 { font-size:1.1rem; font-weight:700; }
+header p { font-size:0.76rem; opacity:0.85; }
+.tabs { display:flex; background:white; border-bottom:2px solid var(--cinza-borda); padding:0 16px; gap:2px; overflow-x:auto; }
+.tab-btn { padding:11px 14px; border:none; background:none; font-size:0.82rem; font-weight:600; color:var(--cinza); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all 0.2s; }
+.tab-btn.active { color:var(--azul); border-bottom-color:var(--azul); }
+.tab-panel { display:none; padding:16px 24px; max-width:1100px; margin:0 auto; }
+.tab-panel.active { display:block; }
+.loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; z-index:999; flex-direction:column; gap:10px; font-weight:600; color:var(--azul); }
+.spinner { width:36px; height:36px; border:4px solid var(--azul-claro); border-top-color:var(--azul); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; margin-bottom:14px; }
+.card-title { font-size:0.8rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+.form-row { display:flex; gap:12px; flex-wrap:wrap; }
+.form-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:120px; }
+label { font-size:0.76rem; font-weight:600; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; }
+input[type="date"], input[type="text"], input[type="password"], input[type="number"], select, textarea {
+ border:1.5px solid var(--cinza-borda); border-radius:7px; padding:8px 10px; font-size:0.88rem;
+ font-family:inherit; color:var(--texto); background:white; transition:border-color 0.2s; width:100%;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--azul); }
+input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cinza); cursor:not-allowed; }
+.btn-salvar { width:100%; padding:12px; background:var(--azul); color:white; border:none; border-radius:9px; font-size:0.95rem; font-weight:700; cursor:pointer; margin-bottom:6px; }
+.btn-salvar:hover { background:var(--azul-mid); }
+.btn-salvar:disabled { background:var(--cinza); cursor:not-allowed; }
+.msg-edit { font-size:0.82rem; color:var(--amarelo); min-height:20px; font-weight:600; }
+.filtros { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:12px 14px; margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.btn-filtrar { padding:8px 16px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+.btn-limpar { padding:8px 12px; background:none; color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+
+/* CATS GRID */
+.cats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:14px; }
+.cat-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); overflow:hidden; }
+.cat-header { padding:9px 13px; display:flex; align-items:center; gap:7px; background:var(--azul-claro); border-bottom:1px solid var(--cinza-borda); }
+.cat-header span { font-size:0.82rem; font-weight:700; color:var(--azul); }
+.cat-body { padding:10px 12px; display:flex; flex-direction:column; gap:7px; }
+.cat-vazio { font-size:0.78rem; color:var(--cinza); font-style:italic; text-align:center; padding:8px 0; }
+
+/* PROF ROW NO FORM */
+.prof-row { display:flex; gap:5px; align-items:center; }
+.sel-prof { flex:2; font-size:0.83rem !important; padding:6px 8px !important; }
+.sel-turno-prof { flex:1; font-size:0.78rem !important; padding:6px 6px !important; min-width:80px; }
+.inp-obs-prof { flex:1; font-size:0.76rem !important; padding:6px 7px !important; min-width:70px; }
+.btn-rm { border:none; background:none; cursor:pointer; font-size:0.85rem; padding:3px 6px; border-radius:4px; color:var(--cinza); flex-shrink:0; }
+.btn-rm:hover { background:#FEE2E2; color:var(--vermelho); }
+.btn-add-row { font-size:0.76rem; color:var(--azul); background:none; border:1.5px dashed var(--azul-mid); border-radius:6px; padding:5px 8px; cursor:pointer; width:100%; margin-top:2px; }
+.btn-add-row:hover { background:var(--azul-claro); }
+.sem-cadastro { font-size:0.75rem; color:var(--cinza); background:#FEF9C3; border:1px solid #FDE68A; border-radius:6px; padding:7px 10px; text-align:center; }
+
+/* CONSULTA LISTA */
+.lista { display:flex; flex-direction:column; gap:10px; }
+.plantao-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); overflow:hidden; }
+.pc-header { padding:11px 14px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; cursor:pointer; background:var(--cinza-claro); border-bottom:1px solid var(--cinza-borda); user-select:none; }
+.pc-header:hover { background:var(--azul-claro); }
+.pc-data { font-weight:700; font-size:0.92rem; }
+.turno-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; }
+.badge-dia { background:#FEF3C7; color:#92400E; }
+.badge-not { background:#EDE9FE; color:#4C1D95; }
+.pc-resumo { font-size:0.76rem; color:var(--cinza); margin-left:auto; }
+.chevron { color:var(--cinza); font-size:0.75rem; transition:transform 0.2s; }
+.chevron.open { transform:rotate(180deg); }
+.pc-body { padding:12px 14px; display:none; }
+.pc-body.open { display:block; }
+.det-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:9px; margin-bottom:10px; }
+.det-cat { background:var(--cinza-claro); border-radius:8px; padding:9px 11px; }
+.det-cat-titulo { font-size:0.72rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:4px; margin-bottom:5px; }
+.det-prof { font-size:0.83rem; padding:2px 0; display:flex; gap:5px; align-items:baseline; flex-wrap:wrap; }
+.det-turno { font-size:0.68rem; font-weight:700; background:var(--azul); color:white; padding:1px 5px; border-radius:3px; }
+.det-obs { font-size:0.7rem; color:#92400E; font-style:italic; background:#FFFBEB; border-radius:3px; padding:1px 5px; }
+.ausente { color:var(--cinza); font-style:italic; font-size:0.8rem; }
+.obs-bloco { background:#FFFBEB; border-left:3px solid var(--amarelo); border-radius:0 7px 7px 0; padding:8px 11px; font-size:0.82rem; color:#78350F; margin-top:8px; }
+.pc-acoes { display:flex; gap:7px; margin-top:10px; border-top:1px solid var(--cinza-borda); padding-top:9px; flex-wrap:wrap; }
+.btn-edit { padding:6px 13px; background:var(--azul-claro); color:var(--azul); border:1px solid var(--azul-mid); border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; }
+.btn-wa { padding:6px 13px; background:#E8F9EF; color:#128C3E; border:1px solid #A8D5B5; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; }
+.btn-del { padding:6px 13px; background:white; color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; margin-left:auto; }
+.btn-del:hover { background:#FEE2E2; color:var(--vermelho); border-color:#FECACA; }
+.empty { text-align:center; padding:40px 20px; color:var(--cinza); font-size:0.9rem; }
+.empty .big { font-size:2.5rem; margin-bottom:8px; }
+
+/* VIEW TOGGLE */
+.view-toggle { display:flex; gap:8px; margin-bottom:12px; }
+.btn-view { padding:7px 14px; border-radius:7px; border:1.5px solid var(--cinza-borda); background:white; color:var(--cinza); font-weight:600; cursor:pointer; font-size:0.82rem; }
+.btn-view.active { background:var(--azul); color:white; border-color:var(--azul); }
+
+/* TABELA CATEGORIA */
+.tabela-wrap { overflow-x:auto; background:white; border-radius:10px; border:1px solid var(--cinza-borda); }
+.tabela-cat { border-collapse:collapse; font-size:0.81rem; width:100%; }
+.tabela-cat th { background:var(--azul); color:white; padding:8px 10px; text-align:center; font-weight:600; white-space:nowrap; }
+.tabela-cat th.th-nome { text-align:left; background:#0F3D6B; min-width:120px; }
+.tabela-cat th.th-total { background:#0F3D6B; }
+.tabela-cat td { padding:6px 8px; border-bottom:1px solid var(--cinza-borda); text-align:center; }
+.tabela-cat td.td-nome { text-align:left; font-weight:600; white-space:nowrap; }
+.tabela-cat tr:last-child td { border-bottom:none; }
+.tabela-cat tr:hover td { background:var(--azul-claro); }
+.sigla-D { background:#FEF3C7; color:#92400E; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-N { background:#EDE9FE; color:#4C1D95; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-M { background:#DCFCE7; color:#166534; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-T { background:#FEE2E2; color:#991B1B; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-EVS { background:#FEF3C7; color:#92400E; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-EVF { background:#FDE68A; color:#78350F; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-EM { background:#DCFCE7; color:#166534; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-ET { background:#FEE2E2; color:#991B1B; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.td-total { font-weight:700; color:var(--azul); }
+.cat-secao-titulo { background:var(--cinza-claro); padding:9px 12px; font-size:0.78rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--cinza-borda); }
+
+/* MODAIS */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:900; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.hidden { display:none; }
+.modal-box { background:white; border-radius:12px; padding:24px; max-width:400px; width:100%; }
+.modal-box h3 { font-size:1rem; margin-bottom:8px; }
+.modal-box p { font-size:0.87rem; color:var(--cinza); margin-bottom:16px; line-height:1.5; }
+.modal-box input { margin-bottom:14px; }
+.modal-btns { display:flex; gap:8px; }
+.btn-modal-cancel { flex:1; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; }
+.btn-modal-confirm { flex:1; padding:9px; background:var(--vermelho); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; opacity:0.4; }
+.btn-modal-confirm.ativo { opacity:1; }
+.modal-senha-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:950; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-senha-overlay.hidden { display:none; }
+.modal-senha-box { background:white; border-radius:12px; padding:24px; max-width:360px; width:100%; }
+.modal-senha-box h3 { font-size:1rem; margin-bottom:6px; color:var(--azul); }
+.modal-senha-box p { font-size:0.85rem; color:var(--cinza); margin-bottom:14px; line-height:1.5; }
+.modal-senha-box input { margin-bottom:6px; }
+.modal-senha-btns { display:flex; gap:8px; margin-top:10px; }
+.btn-senha-cancel { flex:1; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; }
+.btn-senha-ok { flex:1; padding:9px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; }
+.senha-erro { font-size:0.8rem; color:var(--vermelho); min-height:18px; }
+
+/* MODAL PROFISSIONAIS */
+.modal-prof-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:960; display:flex; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+.modal-prof-overlay.hidden { display:none; }
+.modal-prof-box { background:white; border-radius:12px; padding:20px; max-width:560px; width:100%; margin:auto; }
+.modal-prof-box h3 { font-size:1rem; color:var(--azul); margin-bottom:4px; }
+.modal-prof-box .sub { font-size:0.8rem; color:var(--cinza); margin-bottom:14px; }
+.add-prof-row { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:6px; }
+.add-prof-row select, .add-prof-row input { flex:1; min-width:130px; }
+.btn-add-prof { padding:8px 14px; background:var(--azul); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.prof-erro { font-size:0.78rem; color:var(--vermelho); min-height:18px; margin-bottom:8px; }
+.prof-secao { margin-bottom:12px; }
+.prof-secao-titulo { font-size:0.72rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px; border-bottom:1px solid var(--cinza-borda); margin-bottom:6px; }
+.prof-item { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #F1F5F9; }
+.prof-item:last-child { border-bottom:none; }
+.prof-item-nome { flex:1; font-size:0.87rem; }
+.prof-item-nome.inativo { opacity:0.4; text-decoration:line-through; }
+.badge-ativo { font-size:0.68rem; padding:2px 7px; border-radius:10px; font-weight:700; background:#DCFCE7; color:#166534; }
+.badge-inativo { font-size:0.68rem; padding:2px 7px; border-radius:10px; font-weight:700; background:#FEE2E2; color:#991B1B; }
+.btn-toggle { font-size:0.72rem; padding:4px 10px; border-radius:5px; border:1.5px solid; cursor:pointer; white-space:nowrap; font-weight:600; }
+.btn-toggle.desativar { background:#DCFCE7; color:#166534; border-color:#86EFAC; }
+.btn-toggle.desativar:hover { background:#BBF7D0; }
+.btn-toggle.reativar { background:#F1F5F9; color:var(--cinza); border-color:var(--cinza-borda); }
+.btn-toggle.reativar:hover { background:#E2E8F0; }
+.btn-excluir-p { font-size:0.8rem; padding:3px 6px; border:none; background:none; cursor:pointer; color:var(--cinza); }
+.btn-excluir-p:hover { color:var(--vermelho); }
+.btn-fechar-prof { width:100%; padding:9px; background:var(--cinza-claro); color:var(--cinza); border:1.5px solid var(--cinza-borda); border-radius:7px; font-weight:600; cursor:pointer; margin-top:14px; }
+.btn-gerenciar { padding:7px 13px; background:var(--azul-claro); color:var(--azul); border:1.5px solid var(--azul); border-radius:7px; font-weight:600; cursor:pointer; font-size:0.8rem; white-space:nowrap; }
+.badge-count { display:inline-block; background:var(--azul); color:white; border-radius:10px; font-size:0.68rem; padding:1px 6px; margin-left:5px; }
+
+/* PRODUÇÃO */
+.prod-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+.prod-item { background:white; border:1.5px solid var(--cinza-borda); border-radius:9px; padding:10px 12px; display:flex; flex-direction:column; gap:5px; }
+.prod-item label { font-size:0.72rem; font-weight:700; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; }
+.prod-item input[type="number"] { border:1.5px solid var(--cinza-borda); border-radius:7px; padding:7px 10px; font-size:1.1rem; font-weight:700; color:var(--texto); text-align:center; width:100%; font-family:inherit; }
+.prod-item input[type="number"]:focus { outline:none; border-color:var(--azul); }
+.prod-item input[type="number"]:disabled { background:var(--cinza-claro); color:var(--cinza); cursor:not-allowed; }
+.total-box { background:var(--azul); color:white; border-radius:9px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.total-box .label { font-size:0.85rem; font-weight:600; opacity:0.9; }
+.total-box .valor { font-size:1.6rem; font-weight:700; }
+.prod-bloqueado { background:#FFFBEB; border:1.5px solid #F59E0B; border-radius:9px; padding:11px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#78350F; }
+.btn-editar-prod { padding:6px 14px; background:white; color:#78350F; border:1.5px solid #F59E0B; border-radius:7px; font-size:0.8rem; font-weight:700; cursor:pointer; margin-left:auto; flex-shrink:0; }
+.prod-hist-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); margin-bottom:10px; overflow:hidden; }
+.prod-hist-header { padding:10px 14px; display:flex; align-items:center; gap:9px; cursor:pointer; background:var(--cinza-claro); border-bottom:1px solid var(--cinza-borda); flex-wrap:wrap; }
+.prod-hist-header:hover { background:var(--azul-claro); }
+.prod-hist-body { display:none; padding:12px 14px; }
+.prod-hist-body.open { display:block; }
+.prod-num-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:7px; }
+.prod-num-item { background:var(--cinza-claro); border-radius:7px; padding:7px 10px; display:flex; justify-content:space-between; align-items:center; }
+.prod-num-item .pni-label { font-size:0.75rem; color:var(--cinza); }
+.prod-num-item .pni-val { font-size:0.95rem; font-weight:700; color:var(--texto); }
+.editado-badge { font-size:0.68rem; background:#FEF3C7; color:#92400E; border-radius:4px; padding:1px 6px; }
+.resumo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
+.resumo-card { background:white; border-radius:9px; border:1px solid var(--cinza-borda); padding:12px 14px; }
+.resumo-card .rc-label { font-size:0.72rem; color:var(--cinza); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }
+.resumo-card .rc-val { font-size:1.4rem; font-weight:700; color:var(--azul); }
+.resumo-card .rc-sub { font-size:0.72rem; color:var(--cinza); margin-top:2px; }
+.btn-exportar { padding:8px 16px; background:var(--verde); color:white; border:none; border-radius:7px; font-weight:600; cursor:pointer; font-size:0.85rem; }
+.chart-wrap { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; margin-bottom:14px; }
+.chart-titulo { font-size:0.8rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; }
+
+/* DASHBOARD */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:10px; margin-bottom:14px; }
+.kpi-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:13px 14px; }
+.kpi-label { font-size:0.7rem; font-weight:700; color:var(--cinza); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px; }
+.kpi-valor { font-size:1.7rem; font-weight:700; color:var(--azul); line-height:1; margin-bottom:3px; }
+.kpi-valor.verm { color:var(--vermelho); } .kpi-valor.verd { color:var(--verde); } .kpi-valor.amar { color:#B45309; }
+.kpi-sub { font-size:0.71rem; color:var(--cinza); }
+.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.dash-card { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:14px 16px; }
+.dash-card.full { grid-column:1/-1; }
+.dash-titulo { font-size:0.78rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; }
+.turno-comp { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.turno-bloco { background:var(--cinza-claro); border-radius:8px; padding:11px 13px; }
+.turno-titulo { font-size:0.75rem; font-weight:700; color:var(--cinza); margin-bottom:8px; }
+.turno-linha { display:flex; justify-content:space-between; font-size:0.8rem; padding:2px 0; }
+.turno-linha .val { font-weight:700; }
+.grav-barra { height:20px; border-radius:6px; overflow:hidden; display:flex; margin:8px 0; }
+.grav-legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
+.grav-item { font-size:0.75rem; color:var(--cinza); display:flex; align-items:center; gap:5px; }
+.grav-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+.dash-vazio { text-align:center; padding:60px 20px; color:var(--cinza); }
+.dash-vazio .big { font-size:3rem; margin-bottom:10px; }
+.dash-filtros { background:white; border-radius:10px; border:1px solid var(--cinza-borda); padding:12px 14px; margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.comp-total { font-size:0.72rem; background:var(--cinza-claro); border-radius:7px; padding:9px 12px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:8px; }
+.comp-total span { font-weight:700; color:var(--texto); } .comp-total small { color:var(--cinza); }
+
+/* INÍCIO */
+.inicio-card { background:white; border-radius:12px; border:1px solid var(--cinza-borda); padding:20px 18px; cursor:pointer; transition:all 0.18s; display:flex; flex-direction:column; }
+.inicio-card:hover { border-color:var(--azul); box-shadow:0 4px 16px rgba(27,108,168,0.12); transform:translateY(-2px); }
+.inicio-card-icon { font-size:2rem; margin-bottom:10px; }
+.inicio-card-titulo { font-size:0.95rem; font-weight:700; color:var(--azul); margin-bottom:5px; }
+.inicio-card-desc { font-size:0.78rem; color:var(--cinza); line-height:1.45; margin-top:auto; }
+@media (max-width:580px) { #inicio-resumo { grid-template-columns:1fr; } }
+
+/* CHART LEGEND */
+.chart-legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+.chart-legend-item { display:flex; align-items:center; gap:5px; font-size:0.76rem; color:var(--cinza); }
+.chart-legend-line { width:22px; height:3px; border-radius:2px; }
+.chart-legend-dash { width:22px; height:0; border-top:2.5px dashed; border-radius:2px; }
+.toast { position:fixed; bottom:20px; right:20px; background:var(--verde); color:white; padding:11px 18px; border-radius:9px; font-weight:600; font-size:0.88rem; box-shadow:0 4px 16px rgba(0,0,0,0.15); opacity:0; transform:translateY(10px); transition:all 0.3s; z-index:1100; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* P3 */
+.p3-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.p3-slot { background:var(--cinza-claro); border-radius:8px; padding:10px; }
+.p3-slot-label { font-size:0.75rem; font-weight:700; color:var(--cinza); margin-bottom:7px; }
+.p3-slot input, .p3-slot select { margin-bottom:6px; }
+.p3-slot input:last-child, .p3-slot select:last-child { margin-bottom:0; }
+
+@media (max-width:580px) {
+ .cats-grid { grid-template-columns:1fr; }
+ .p3-grid { grid-template-columns:1fr; }
+ .dash-row { grid-template-columns:1fr; }
+ footer> div { flex-direction:column; align-items:center; text-align:center; }
+ footer> div> div { text-align:center; }
+ .turno-comp { grid-template-columns:1fr; }
+ .form-row { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="tela-login" style="position:fixed;inset:0;background:#0F3D6B;display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;">
+ <div style="background:white;border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+ <div style="text-align:center;margin-bottom:24px;">
+ <div style="font-size:2.5rem;margin-bottom:8px;"></div>
+ <div style="font-size:1.2rem;font-weight:700;color:#1B6CA8;">UPED · Sistema de Plantão</div>
+ <div style="font-size:0.78rem;color:#64748B;margin-top:4px;">Unidade de Atendimento Pediátrico</div>
+ </div>
+ <div style="display:flex;flex-direction:column;gap:12px;">
+ <div><label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">E-mail</label>
+ <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="username" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+ </div>
+ <div><label style="font-size:0.72rem;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Senha</label>
+ <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" style="width:100%;border:1.5px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-size:0.9rem;font-family:inherit;">
+ </div>
+ <div id="login-erro" style="font-size:0.8rem;color:#E53E3E;min-height:18px;"></div>
+ <button id="btn-login" style="width:100%;padding:12px;background:#1B6CA8;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">Entrar</button>
+ <button id="btn-esqueci-senha" style="width:100%;padding:8px;background:none;border:none;color:#64748B;font-size:0.8rem;cursor:pointer;font-family:inherit;margin-top:4px;">Esqueci minha senha</button>
+ </div>
+ <div style="text-align:center;margin-top:20px;font-size:0.72rem;color:#94A3B8;">Datum Studio · UPED © 2026</div>
+ </div>
+</div>
+
+<div class="loading-overlay" id="loading">
+ <div class="spinner"></div><div>Conectando...</div>
+</div>
+
+<!-- MODAL EXCLUIR PLANTÃO -->
+<div class="modal-overlay hidden" id="modal-excluir">
+ <div class="modal-box">
+ <h3 style="color:var(--vermelho)">Excluir plantão</h3>
+ <p>Esta ação não pode ser desfeita. Digite <strong>EXCLUIR</strong> para confirmar:</p>
+ <input type="text" id="modal-input" placeholder="Digite EXCLUIR">
+ <div class="modal-btns">
+ <button class="btn-modal-cancel" onclick="fecharModal()">Cancelar</button>
+ <button class="btn-modal-confirm" id="btn-modal-confirm" onclick="confirmarExclusao()">Excluir</button>
+ </div>
+ </div>
+</div>
+
+<!-- modal senha removido — controle por login admin -->
+
+
+<header>
+ <div style="font-size:26px"></div>
+ <div style="flex:1;">
+ <h1>UPED · Sistema de Plantão</h1>
+ <p>Unidade de Atendimento Pediátrico · Gestão em tempo real</p>
+ </div>
+ <div id="header-usuario" style="display:none;align-items:center;gap:10px;flex-shrink:0;">
+ <div style="text-align:right;">
+ <div id="header-nome" style="font-size:0.82rem;font-weight:600;color:white;"></div>
+ <div id="header-perfil" style="font-size:0.7rem;opacity:0.75;"></div>
+ </div>
+ <button id="btn-alterar-senha" style="padding:5px 10px;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:6px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Senha</button>
+ <button id="btn-logout" style="padding:5px 10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Sair</button>
+ </div>
+</header>
+
+<div class="tabs">
+ <button class="tab-btn active" onclick="switchTab('inicio')">Início</button>
+ <button class="tab-btn" onclick="switchTab('registrar')">Registrar Plantão</button>
+ <button class="tab-btn" id="tab-consultar" onclick="switchTab('consultar')">Consultar Plantões</button>
+ <button class="tab-btn" onclick="switchTab('producao')">Registro de Produção</button>
+ <button class="tab-btn" id="tab-cons-prod" onclick="switchTab('consprod')">Consultar Produção</button>
+ <button class="tab-btn" onclick="switchTab('gestao')">Relatórios</button>
+ <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')" style="display:none;">Painel Admin</button>
+</div>
+
+<!-- ===== INÍCIO ===== -->
+<div class="tab-panel active" id="panel-inicio">
+ <!-- Cards de acesso rápido — gerados por JS conforme perfil -->
+ <div id="inicio-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;align-items:stretch;"></div>
+ <!-- Resumo do dia -->
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;" id="inicio-resumo">
+ <div class="card"><div class="card-title" style="display:block;">Último Plantão Registrado</div><div id="inicio-ultimo-plantao" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
+ <div class="card"><div class="card-title" style="display:block;">Próximo Turno do Dia</div><div id="inicio-proximo-turno" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div></div>
+ </div>
+ <!-- Card último censo -->
+ <div class="card" id="card-inicio-censo">
+ <div class="card-title" style="display:block;">Último Censo Registrado</div>
+ <div id="inicio-ultimo-censo" style="font-size:0.87rem;color:var(--cinza);">Carregando...</div>
+ </div>
+</div>
+<div class="tab-panel" id="panel-registrar">
+ <div class="card">
+ <div class="card-title" style="display:block;">Dados do Plantão</div>
+ <div class="form-row">
+ <div class="form-group">
+ <label>Data</label>
+ <input type="date" id="f-data">
+ </div>
+ <div class="form-group">
+ <label>Turno do Plantão</label>
+ <select id="f-turno">
+ <option value="DIURNO">Diurno</option>
+ <option value="NOTURNO" selected>Noturno</option>
+ </select>
+ </div>
+ <div class="form-group" style="flex:0;min-width:auto;justify-content:flex-end;">
+ <label>&nbsp;</label>
+ <button onclick="novoRegistro()" style="padding:8px 14px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:7px;font-weight:600;cursor:pointer;font-size:0.85rem;">Limpar</button>
+ </div>
+ </div>
+ </div>
+ <div class="cats-grid" id="form-cats"></div>
+ <div class="cat-card" style="margin-bottom:14px;">
+ <div class="cat-header"><span></span><span>Plantonista P3</span></div>
+ <div class="cat-body">
+ <div class="p3-grid">
+ <div class="p3-slot">
+ <div class="p3-slot-label">Manhã (11h–17h)</div>
+ <select id="p3m-nome"><option value="">— Selecionar P3 —</option></select>
+ <input type="text" id="p3m-obs" placeholder="Observação">
+ </div>
+ <div class="p3-slot">
+ <div class="p3-slot-label">Tarde (17h–23h)</div>
+ <select id="p3t-nome"><option value="">— Selecionar P3 —</option></select>
+ <input type="text" id="p3t-obs" placeholder="Observação">
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="card" style="margin-bottom:14px;">
+ <div class="card-title" style="display:block;">Observações gerais do plantão</div>
+ <textarea id="f-obs" placeholder="Ex: profissional chegando às 21h, substituição..." style="width:100%;min-height:65px;resize:vertical;border:1.5px solid var(--cinza-borda);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:0.87rem;"></textarea>
+ </div>
+
+ <!-- CENSO DO PLANTÃO no Registrar -->
+ <div class="card" style="margin-bottom:14px;" id="card-censo-reg">
+ <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+ <span>Censo do Plantão</span>
+ <span style="font-size:0.72rem;font-weight:400;color:var(--cinza);">Salvo automaticamente ao clicar em Registrar Plantão</span>
+ </div>
+ <div id="censo-aviso" class="prod-bloqueado" style="display:none;">
+ <span></span><span id="censo-aviso-txt"></span>
+ <button class="btn-editar-prod" onclick="editarCenso()">Editar</button>
+ </div>
+ <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pacientes Internados</div>
+ <div class="prod-grid" id="censo-campos-internados">
+ <div class="prod-item"><label>Geral</label><input type="number" id="cs-nemo" min="0" value="0"></div>
+ <div class="prod-item"><label>Respiratória</label><input type="number" id="cs-dory" min="0" value="0"></div>
+ <div class="prod-item"><label>Sala Vermelha</label><input type="number" id="cs-vermelha" min="0" value="0"></div>
+ <div class="prod-item"><label>Sala Verm. (OBS)</label><input type="number" id="cs-vermelha-obs" min="0" value="0"></div>
+ <div class="prod-item"><label>Isolamento</label><input type="number" id="cs-isolamento" min="0" value="0"></div>
+ </div>
+ <div class="total-box" style="margin-bottom:14px;">
+ <span class="label">Total de Internados</span>
+ <span class="valor" id="cs-total-internados">0</span>
+ </div>
+ <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Situação Clínica</div>
+ <div class="prod-grid" id="censo-campos-clinica">
+ <div class="prod-item"><label>Ag. Regulação</label><input type="number" id="cs-regulacao" min="0" value="0"></div>
+ <div class="prod-item"><label>Intubados</label><input type="number" id="cs-intubados" min="0" value="0"></div>
+ <div class="prod-item"><label>CPAP</label><input type="number" id="cs-cpap" min="0" value="0"></div>
+ <div class="prod-item"><label>VNI</label><input type="number" id="cs-vni" min="0" value="0"></div>
+ <div class="prod-item"><label>Obs. Geral (Medicação)</label><input type="number" id="cs-obs-medicacao" min="0" value="0"></div>
+ </div>
+ </div>
+
+ <button class="btn-salvar" id="btn-salvar" onclick="salvar()">Registrar Plantão</button>
+ <div class="msg-edit" id="msg-edit"></div>
+</div>
+
+<!-- ===== CONSULTAR ===== -->
+<div class="tab-panel" id="panel-consultar">
+ <div class="filtros">
+ <div class="form-group"><label>Data início</label><input type="date" id="fi-ini"></div>
+ <div class="form-group"><label>Data fim</label><input type="date" id="fi-fim"></div>
+ <div class="form-group">
+ <label>Turno</label>
+ <select id="fi-turno">
+ <option value="">Todos</option>
+ <option value="DIURNO">Diurno</option>
+ <option value="NOTURNO">Noturno</option>
+ </select>
+ </div>
+ <div class="form-group"><label>Profissional</label><input type="text" id="fi-nome" placeholder="Nome..."></div>
+ <button class="btn-filtrar" onclick="filtrar()">Buscar</button>
+ <button class="btn-limpar" onclick="limparFiltros()">Limpar</button>
+ </div>
+ <div class="view-toggle">
+ <button class="btn-view active" id="btn-view-lista" onclick="setView('lista')">Por plantão</button>
+ <button class="btn-view" id="btn-view-cat" onclick="setView('categoria')">Por categoria</button>
+ </div>
+ <div id="view-lista"><div id="lista" class="lista"></div></div>
+ <div id="view-categoria" style="display:none;">
+ <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+ <div class="form-group" style="min-width:180px;max-width:240px;">
+ <label>Categoria</label>
+ <select id="fi-cat" onchange="renderTabelaCat()">
+ <option value="">Todas as categorias</option>
+ </select>
+ </div>
+ <button class="btn-exportar" onclick="exportarCatCSV()">Exportar CSV</button>
+ </div>
+ <div id="tabela-cat-wrap"></div>
+ </div>
+</div>
+
+<!-- ===== PRODUÇÃO ===== -->
+<div class="tab-panel" id="panel-producao">
+ <div class="card" id="card-prod">
+ <div class="card-title" style="display:block;">Fechamento de Produção do Plantão</div>
+ <div class="form-row" style="margin-bottom:12px;">
+ <div class="form-group"><label>Data</label><input type="date" id="fp-data"></div>
+ <div class="form-group">
+ <label>Turno</label>
+ <select id="fp-turno">
+ <option value="DIURNO">Diurno</option>
+ <option value="NOTURNO" selected>Noturno</option>
+ </select>
+ </div>
+ </div>
+ <div id="prod-aviso" class="prod-bloqueado" style="display:none;">
+ <span></span><span id="prod-aviso-txt"></span>
+ <button class="btn-editar-prod" onclick="editarProducao()">Editar</button>
+ </div>
+ <div class="prod-grid" id="prod-campos">
+ <div class="prod-item"><label>Ficha Azul</label><input type="number" id="p-azul" min="0" value="0"></div>
+ <div class="prod-item"><label>Ficha Verde</label><input type="number" id="p-verde" min="0" value="0"></div>
+ <div class="prod-item"><label>Ficha Amarela</label><input type="number" id="p-amarela" min="0" value="0"></div>
+ <div class="prod-item"><label>Ficha Vermelha</label><input type="number" id="p-vermelha" min="0" value="0"></div>
+ </div>
+ <div class="total-box" style="margin-bottom:10px;">
+ <span class="label">Total de Atendimentos</span>
+ <span class="valor" id="p-total">0</span>
+ </div>
+ <div style="font-size:0.75rem;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Informações complementares</div>
+ <div class="prod-grid" id="prod-campos-comp">
+ <div class="prod-item"><label>Sint. Gripais</label><input type="number" id="p-gripais" min="0" value="0"></div>
+ <div class="prod-item"><label>Sutura</label><input type="number" id="p-sutura" min="0" value="0"></div>
+ <div class="prod-item"><label>Internamento</label><input type="number" id="p-internamento" min="0" value="0"></div>
+ <div class="prod-item"><label>Alta</label><input type="number" id="p-alta" min="0" value="0"></div>
+ <div class="prod-item"><label>Evasão</label><input type="number" id="p-evasao" min="0" value="0"></div>
+ <div class="prod-item"><label>Transferência</label><input type="number" id="p-transferencia" min="0" value="0"></div>
+ <div class="prod-item"><label>Óbito</label><input type="number" id="p-obito" min="0" value="0"></div>
+ <div class="prod-item"><label>Raio-X</label><input type="number" id="p-raiox" min="0" value="0"></div>
+ <div class="prod-item"><label>Laboratório</label><input type="number" id="p-laboratorio" min="0" value="0"></div>
+ </div>
+ <button class="btn-salvar" id="btn-salvar-prod" onclick="salvarProducao()">Registrar Produção</button>
+ </div>
+</div>
+
+<div class="tab-panel" id="panel-consprod">
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>Consultar Producao e Censo</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="cp-ini"></div>
+        <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="cp-fim"></div>
+        <div class="form-group" style="min-width:100px;"><label>Turno</label>
+          <select id="cp-turno"><option value="">Todos</option><option value="DIURNO">Diurno</option><option value="NOTURNO">Noturno</option></select>
+        </div>
+        <button class="btn-filtrar" onclick="renderConsProd()" style="margin-bottom:0">Filtrar</button>
+        <button class="btn-limpar" onclick="limparConsProd()" style="margin-bottom:0">Limpar</button>
+      </div>
+    </div>
+    <div id="consprod-lista"></div>
+  </div>
+</div>
+
+<!-- ===== GESTÃO ===== -->
+<div class="tab-panel" id="panel-gestao">
+ <!-- Tabs internas -->
+ <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+ <button class="btn-view active" id="gtab-dash" onclick="switchGestao('dash')">Dashboard</button>
+ <button class="btn-view" id="gtab-hist" onclick="switchGestao('hist')">Histórico de Produção</button>
+ <button class="btn-view" id="gtab-censo" onclick="switchGestao('censo')">Censo do Plantão</button>
+ </div>
+
+ <!-- Dashboard -->
+ <div id="gsec-dash">
+ <div class="dash-filtros">
+ <div class="form-group" style="min-width:120px;"><label>De</label><input type="date" id="db-ini"></div>
+ <div class="form-group" style="min-width:120px;"><label>Até</label><input type="date" id="db-fim"></div>
+ <div class="form-group" style="min-width:110px;">
+ <label>Turno</label>
+ <select id="db-turno"><option value="">Todos</option><option value="DIURNO">Diurno</option><option value="NOTURNO">Noturno</option></select>
+ </div>
+ <button class="btn-filtrar" onclick="renderDashboard()">Aplicar</button>
+ <button class="btn-limpar" onclick="limparDashboard()">Limpar</button>
+ <button class="btn-exportar" onclick="exportarPDFDashboard()">PDF</button>
+ </div>
+ <div id="dash-conteudo"><div class="dash-vazio"><div class="big"></div><div>Carregando...</div></div></div>
+ </div>
+
+ <!-- Histórico Produção -->
+ <div id="gsec-hist" style="display:none;">
+ <div class="card">
+ <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+ <span>Histórico de Produção</span>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+ <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rp-ini"></div>
+ <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rp-fim"></div>
+ <div class="form-group" style="min-width:100px;"><label>Turno</label>
+ <select id="rp-turno"><option value="">Todos</option><option value="DIURNO">Diurno</option><option value="NOTURNO">Noturno</option></select>
+ </div>
+ <button class="btn-filtrar" onclick="filtrarProducao()" style="margin-bottom:0">Aplicar</button>
+ <button class="btn-limpar" onclick="limparProd()" style="margin-bottom:0">Limpar</button>
+ <button class="btn-exportar" onclick="exportarProdCSV()">CSV</button>
+ <button class="btn-exportar" onclick="exportarPDFProd()" style="background:#1B6CA8;">PDF</button>
+ </div>
+ </div>
+ <div class="resumo-grid" id="resumo-prod"></div>
+ <div class="chart-wrap" id="chart-wrap-prod" style="display:none;">
+ <div class="chart-titulo">Atendimentos por plantão</div>
+ <div style="position:relative;width:100%;height:200px;"><canvas id="chart-prod"></canvas></div>
+ </div>
+ <div id="lista-prod"></div>
+ </div>
+ </div>
+
+ <!-- Censo do Plantão -->
+ <div id="gsec-censo" style="display:none;">
+ <div class="card">
+ <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+ <span>Compilado de Censo</span>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+ <div class="form-group" style="min-width:110px;"><label>De</label><input type="date" id="rc-ini"></div>
+ <div class="form-group" style="min-width:110px;"><label>Até</label><input type="date" id="rc-fim"></div>
+ <button class="btn-filtrar" onclick="filtrarCenso()" style="margin-bottom:0">Aplicar</button>
+ <button class="btn-limpar" onclick="limparCenso()" style="margin-bottom:0">Limpar</button>
+ <button class="btn-exportar" onclick="exportarPDFCenso()" style="margin-bottom:0">PDF</button>
+ </div>
+ </div>
+ <div id="lista-censo"></div>
+ </div>
+ </div>
+
+
+</div>
+
+<!-- ===== PAINEL ADMIN ===== -->
+<div class="tab-panel" id="panel-admin">
+ <!-- Usuários -->
+ <div class="card" style="margin-bottom:14px;">
+ <div class="card-title" style="display:block;">Usuários do Sistema</div>
+ <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;"><strong>Admin</strong> — acesso completo. <strong>Recepção</strong> — Registrar, Consultar e Produção apenas.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+ <input type="text" id="nu-nome" placeholder="Nome completo" style="flex:2;min-width:140px;">
+ <input type="email" id="nu-email" placeholder="E-mail" style="flex:2;min-width:160px;">
+ <input type="password" id="nu-senha" placeholder="Senha (mín. 6)" style="flex:1;min-width:120px;">
+ <select id="nu-perfil" style="flex:1;min-width:120px;">
+ <option value="recepcao">Recepção</option>
+ <option value="admin">Administrador</option>
+ </select>
+ <button class="btn-add-prof" id="btn-criar-usuario">+ Criar usuário</button>
+ </div>
+ <div class="prof-erro" id="nu-erro"></div>
+ <div id="lista-usuarios"></div>
+ </div>
+ <!-- Profissionais -->
+ <div class="card">
+ <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+ <span>Profissionais da Equipe</span>
+ <button class="btn-exportar" onclick="exportarPDFProfissionais()">Relatório PDF</button>
+ </div>
+ <p style="font-size:0.83rem;color:var(--cinza);margin-bottom:14px;">P3 e Evolução usam automaticamente os profissionais de <strong>Médicos Plantonistas</strong>.</p>
+ <div class="add-prof-row">
+ <select id="new-prof-cat" onchange="renderListaProfs()">
+ <option value="recepcao">Recepção</option>
+ <option value="portaria">Ag. de Portaria</option>
+ <option value="maqueiro">Maqueiro</option>
+ <option value="motorista">Motorista</option>
+ <option value="cozinheira">Cozinheira</option>
+ <option value="aux_cozinha">Auxiliar de Cozinha</option>
+ <option value="asg">ASG</option>
+ <option value="copa">Copeira</option>
+ <option value="farmacia">Farmácia</option>
+ <option value="nutricionista">Nutricionista</option>
+ <option value="farmaceutico">Farmacêutico</option>
+ <option value="social">Serviço Social</option>
+ <option value="tec_enf">Téc. Enfermagem</option>
+ <option value="enfermeiro">Enfermeiros(as)</option>
+ <option value="medico">Médicos Plantonistas</option>
+ <option value="fisio">Fisioterapeuta</option>
+ </select>
+ <input type="text" id="new-prof-nome" placeholder="Nome completo do profissional">
+ <button class="btn-add-prof" onclick="adicionarProfissional()">+ Adicionar</button>
+ </div>
+ <div class="prof-erro" id="prof-erro"></div>
+ </div>
+ <div id="lista-profs-equipe"></div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO PRODUÇÃO -->
+<div class="modal-overlay hidden" id="modal-prod-confirmacao">
+ <div class="modal-box" style="max-width:420px;">
+ <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+ <span style="font-size:1.8rem;"></span>
+ <div>
+ <div style="font-weight:700;font-size:1rem;color:var(--verde);">Produção registrada!</div>
+ <div style="font-size:0.78rem;color:var(--cinza);">Resumo do registro</div>
+ </div>
+ </div>
+ <div id="modal-prod-resumo" style="background:var(--cinza-claro);border-radius:8px;padding:12px 14px;margin-bottom:16px;"></div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;">
+ <button id="modal-prod-wa" style="flex:1;padding:11px;background:#25D366;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;">Enviar no WhatsApp</button>
+ <button onclick="fecharModalProd()" style="padding:11px 18px;background:var(--cinza-claro);color:var(--cinza);border:1.5px solid var(--cinza-borda);border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;">Fechar</button>
+ </div>
+ </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO PÓS-SALVAR -->
+<div class="modal-overlay hidden" id="modal-confirmacao">
+ <div class="modal-box" style="max-width:480px;">
+ <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+ <span style="font-size:1.8rem;"></span>
+ <div>
+ <div style="font-weight:700;font-size:1rem;color:var(--verde);">Plantão salvo com sucesso!</div>
+ <div style="font-size:0.78rem;color:var(--cinza);">Resumo do plantão registrado</div>
+ </div>
+ </div>
+ <div id="modal-conf-resumo" style="background:var(--cinza-claro);border-radius:8px;padding:12px 14px;margin-bottom:16px;"></div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;">
+ <button id="modal-conf-wa" style="flex:1;padding:11px;background:#25D366;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;gap:7px;">
+ Enviar no WhatsApp
+ </button>
+ <button onclick="fecharModalConf()" style="padding:11px 18px;background:var(--cinza-claro);color:var(--cinza);border:1.5px solid var(--cinza-borda);border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;">
+ Fechar
+ </button>
+ </div>
+ </div>
+</div>
+
+<!-- MODAL ALTERAR SENHA -->
+<div class="modal-overlay hidden" id="modal-alterar-senha">
+ <div class="modal-box" style="max-width:380px;">
+ <h3 style="color:var(--azul);margin-bottom:16px;">Alterar Senha</h3>
+ <div style="display:flex;flex-direction:column;gap:10px;">
+ <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Senha atual</label>
+ <input type="password" id="as-atual" placeholder="••••••••"></div>
+ <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Nova senha (mín. 6 caracteres)</label>
+ <input type="password" id="as-nova" placeholder="••••••••"></div>
+ <div><label style="font-size:0.72rem;font-weight:600;color:var(--cinza);text-transform:uppercase;display:block;margin-bottom:4px;">Confirmar nova senha</label>
+ <input type="password" id="as-confirma" placeholder="••••••••"></div>
+ <div id="as-erro" style="font-size:0.8rem;color:var(--vermelho);min-height:18px;"></div>
+ </div>
+ <div class="modal-btns" style="margin-top:14px;">
+ <button class="btn-modal-cancel" onclick="document.getElementById('modal-alterar-senha').classList.add('hidden')">Cancelar</button>
+ <button class="btn-modal-confirm ativo" id="btn-confirmar-senha" style="background:var(--azul);">Alterar</button>
+ </div>
+ </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="background:#0F3D6B;padding:20px 28px;font-family:'Geist',system-ui,sans-serif;margin-top:8px;">
+ <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+ <div style="font-family:'Geist',sans-serif;font-size:0.82rem;font-weight:600;color:white;letter-spacing:0.01em;">
+ <span style="font-weight:400;">Developed by </span><span style="font-weight:600;">Datum Studio</span>
+ </div>
+ <div style="text-align:right;color:rgba(255,255,255,0.72);font-size:0.72rem;line-height:1.7;">
+ <div style="font-weight:500;">UPED · Sistema de Plantão</div>
+ <div style="opacity:0.8;">v1.0.0</div>
+ <div>© <span id="footer-ano">2026</span></div>
+ </div>
+ </div>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, deleteUser as fbDeleteUser, updateProfile, sendPasswordResetEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app = initializeApp({
+ apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
+ authDomain:"uped-plantao.firebaseapp.com",
+ projectId:"uped-plantao",
+ storageBucket:"uped-plantao.firebasestorage.app",
+ messagingSenderId:"875342869066",
+ appId:"1:875342869066:web:db1b3f71c3ae87330eecb3"
+});
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ===== ESTADO DE AUTENTICAÇÃO =====
+let usuarioAtual = null; // { uid, email, displayName, perfil }
+
+// ===== CONSTANTES =====
+const EMAIL_MASTER = 'deboraslopes1@gmail.com'; // conta indeletável
+function isAdmin(){ return usuarioAtual?.perfil === 'admin'; }
+window.abrirSenha = function(titulo, desc, cb) {
+ if(!isAdmin()){ toast(' Acesso restrito a administradores.','#E53E3E'); return; }
+ if(cb) cb();
+};
+
+const TURNOS_PROF = [
+  { v:'DIURNO', l:'Diurno' },
+  { v:'NOTURNO', l:'Noturno' },
+  { v:'MANHA', l:'Manhã' },
+  { v:'TARDE', l:'Tarde' }
+];
+const SIGLAS = { DIURNO:'D', NOTURNO:'N', MANHA:'M', TARDE:'T' };
+
+// Retorna sigla e peso para evolução conforme dia da semana
+function siglaEvolucao(data) {
+  const dow = new Date(data+'T12:00:00').getDay(); // 0=Dom, 6=Sáb
+  return (dow===0||dow===6) ? {sigla:'EVF', peso:0.5} : {sigla:'EVS', peso:0.3};
+}
+// Peso de cada sigla na tabela
+function pesoSigla(sigla, catId, data) {
+  if(catId==='evolucao') return siglaEvolucao(data).peso;
+  if(catId==='p3') return 0.5; // EM ou ET
+  return 1; // todas as demais
+}
+// Formata total: inteiro se sem decimal, .1 se necessário
+function fmtTotal(v) {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.0','');
+}
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const CATS = [
+ { id:'recepcao', icon:'', label:'Recepção' },
+ { id:'portaria', icon:'', label:'Ag. de Portaria' },
+ { id:'maqueiro', icon:'', label:'Maqueiro' },
+ { id:'motorista', icon:'', label:'Motorista' },
+ { id:'cozinheira', icon:'', label:'Cozinheira' },
+ { id:'aux_cozinha', icon:'', label:'Auxiliar de Cozinha' },
+ { id:'asg', icon:'', label:'ASG' },
+ { id:'copa', icon:'', label:'Copeira' },
+ { id:'farmacia', icon:'', label:'Farmácia' },
+ { id:'nutricionista',icon:'', label:'Nutricionista' },
+ { id:'farmaceutico', icon:'', label:'Farmacêutico' },
+ { id:'social', icon:'', label:'Serviço Social' },
+ { id:'tec_enf', icon:'', label:'Téc. Enfermagem' },
+ { id:'enfermeiro', icon:'', label:'Enfermeiros(as)' },
+ { id:'medico', icon:'', label:'Médicos Plantonistas' },
+ { id:'evolucao', icon:'', label:'Evolução' },
+ { id:'fisio', icon:'', label:'Fisioterapeuta' },
+ { id:'p3', icon:'', label:'Plantonista P3' },
+];
+const CAT_FONTE = { evolucao:'medico', p3:'medico' };
+const CATS_CADASTRO = CATS.filter(c=>!CAT_FONTE[c.id]);
+// Laranja removida
+const CAMPOS_FICHAS = ['azul','verde','amarela','vermelha'];
+const CAMPOS_COMP = ['gripais','sutura','internamento','alta','evasao','transferencia','obito','raiox','laboratorio'];
+const CAMPOS_PROD = [...CAMPOS_FICHAS,...CAMPOS_COMP];
+const LABELS_PROD = {
+ azul:' Ficha Azul', verde:' Ficha Verde', amarela:' Ficha Amarela',
+ vermelha:' Ficha Vermelha',
+ gripais:' Sint. Gripais', sutura:' Sutura', internamento:' Internamento',
+ alta:' Alta', evasao:' Evasão', transferencia:' Transferência',
+ obito:' Óbito', raiox:' Raio-X', laboratorio:' Laboratório'
+};
+
+// ===== STATE =====
+let profissionais = []; // { id, catId, nome, ativo }
+let plantoes = []; // docs de plantoes
+let producoes = []; // docs de producao
+let estado = {}; // { catId: [{nome,turno,obs}] }
+let editKey = null;
+let keyExcluir = null;
+// senhaCallback removido — controle por login
+let prodBloqueado = false;
+let chartProd = null;
+let chartEv = null;
+let chartFichas = null;
+
+// ===== UTILS =====
+function abr(nome) {
+ if (!nome) return '';
+ const p = nome.trim().split(/\s+/);
+ return p.length <= 2 ? nome : p[0] + ' ' + p[p.length-1];
+}
+function fmtData(iso) { const [a,m,d]=iso.split('-'); return `${d}/${m}/${a}`; }
+function fmtDataCurta(iso) { const [,m,d]=iso.split('-'); return `${d}/${m}`; }
+function toast(msg, bg) {
+ const t=document.getElementById('toast');
+ t.textContent=msg; t.style.background=bg||'var(--verde)';
+ t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ===== PROFISSIONAIS =====
+onSnapshot(collection(db,'profissionais'), snap=>{
+ profissionais = snap.docs.map(d=>({...d.data(),id:d.id}))
+ .sort((a,b)=> a.catId.localeCompare(b.catId) || a.nome.localeCompare(b.nome));
+ rebuildarForm();
+ atualizarSelectsP3();
+ // Atualiza lista se aba equipe estiver ativa, preservando a categoria selecionada
+ if(document.getElementById('panel-equipe')?.classList.contains('active')) renderListaProfs();
+});
+
+function profsAtivos(catId) {
+ const fonte = CAT_FONTE[catId] || catId;
+ return profissionais.filter(p=>p.catId===fonte && p.ativo!==false);
+}
+
+window.abrirGerenciarProfs = ()=>{ switchTab('equipe'); };
+
+window.renderListaProfs = function renderListaProfs() {
+ const el=document.getElementById('lista-profs-equipe'); if(!el) return;
+ const catAtual = document.getElementById('new-prof-cat')?.value || '';
+ const pp = catAtual ? profissionais.filter(p=>p.catId===catAtual) : [];
+ const cat = CATS_CADASTRO.find(c=>c.id===catAtual);
+ if(!cat){ el.innerHTML=''; return; }
+ const usadoPor=CATS.filter(c=>CAT_FONTE[c.id]===catAtual).map(c=>c.label);
+ if(pp.length===0){
+ el.innerHTML=`<div class="card"><p style="font-size:0.83rem;color:var(--cinza);text-align:center;padding:16px;">Nenhum profissional cadastrado em <strong>${cat.label}</strong> ainda.</p></div>`;
+ return;
+ }
+ el.innerHTML=`<div class="card">
+ <div class="card-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+ <span>${cat.icon} ${cat.label}</span>
+ ${usadoPor.length?`<span style="font-size:0.72rem;font-weight:400;color:var(--cinza);">também usado em: ${usadoPor.join(', ')}</span>`:''}
+ </div>
+ ${pp.map(p=>{
+ const ativo=p.ativo!==false;
+ return `<div class="prof-item">
+ <span class="prof-item-nome${ativo?'':' inativo'}">${p.nome}</span>
+ <span class="${ativo?'badge-ativo':'badge-inativo'}">${ativo?'Ativo':'Inativo'}</span>
+ <button class="btn-toggle ${ativo?'desativar':'reativar'}" onclick="toggleProf('${p.id}',${ativo})">${ativo?'⏸ Desativar':' Reativar'}</button>
+ <button class="btn-excluir-p" onclick="excluirProf('${p.id}','${p.nome.replace(/'/g,"\\'")}')"></button>
+ </div>`;
+ }).join('')}
+ </div>`;
+}
+
+window.adicionarProfissional = async function() {
+ const selCat = document.getElementById('new-prof-cat');
+ const catId = selCat.value;
+ const nome = document.getElementById('new-prof-nome').value.trim();
+ const erroEl = document.getElementById('prof-erro');
+ if(!nome){ erroEl.textContent='Informe o nome.'; return; }
+ const dup = profissionais.find(p=>p.catId===catId && p.nome.toLowerCase()===nome.toLowerCase());
+ if(dup){ erroEl.textContent='Já existe nesta categoria.'; return; }
+ erroEl.textContent='';
+ const id = catId+'_'+Date.now();
+ await setDoc(doc(db,'profissionais',id),{catId,nome,ativo:true});
+ document.getElementById('new-prof-nome').value='';
+ // Mantém a categoria selecionada
+ selCat.value = catId;
+ toast(' Profissional adicionado!');
+};
+window.toggleProf = async(id, estaAtivo)=>{
+ const catSel = document.getElementById('new-prof-cat')?.value;
+ const prof = profissionais.find(p=>p.id===id);
+ if(prof) prof.ativo = !estaAtivo;
+ renderListaProfs();
+ rebuildarForm();
+ atualizarSelectsP3();
+ toast(estaAtivo ? '⏸ Profissional desativado.' : ' Profissional reativado.');
+ try {
+ await setDoc(doc(db,'profissionais',id),{ativo:!estaAtivo},{merge:true});
+ // Restaura categoria após Firebase atualizar o listener
+ if(catSel){ const s=document.getElementById('new-prof-cat'); if(s) s.value=catSel; }
+ } catch(e) {
+ if(prof) prof.ativo = estaAtivo;
+ if(catSel){ const s=document.getElementById('new-prof-cat'); if(s) s.value=catSel; }
+ renderListaProfs();
+ toast(' Erro ao salvar: '+e.message,'#E53E3E');
+ }
+};
+window.excluirProf = async(id, nome)=>{
+ if(!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
+ const catSel = document.getElementById('new-prof-cat')?.value;
+ const idx = profissionais.findIndex(p=>p.id===id);
+ if(idx>-1) profissionais.splice(idx,1);
+ renderListaProfs();
+ rebuildarForm();
+ atualizarSelectsP3();
+ toast(' Profissional removido.');
+ try {
+ await deleteDoc(doc(db,'profissionais',id));
+ if(catSel){ const s=document.getElementById('new-prof-cat'); if(s) s.value=catSel; }
+ } catch(e) { toast(' Erro ao excluir: '+e.message,'#E53E3E'); }
+};
+
+// ===== FORMULÁRIO REGISTRO =====
+function turnoPlantao() { return document.getElementById('f-turno')?.value || ''; }
+
+function turnosProfDisponiveis() {
+ const t = turnoPlantao();
+ if(!t) return [{ v:'', l:'— Turno —' }, ...TURNOS_PROF];
+ if(t === 'DIURNO') return TURNOS_PROF.filter(x => x.v !== 'NOTURNO');
+ return TURNOS_PROF.filter(x => x.v === 'NOTURNO');
+}
+
+function initEstado() {
+ estado={};
+ const t = turnoPlantao(); // pode ser '' se não selecionado
+ CATS.filter(c=>c.id!=='p3').forEach(c=>{ estado[c.id]=[{nome:'',turno:t,obs:''}]; });
+}
+
+function rebuildarForm() {
+ const grid=document.getElementById('form-cats'); if(!grid) return;
+ // Salva seleções atuais
+ const estadoAtual={};
+ CATS.filter(c=>c.id!=='p3').forEach(c=>{ estadoAtual[c.id]=estado[c.id]||[{nome:'',turno:turnoPlantao(),obs:''}]; });
+ estado=estadoAtual;
+ grid.innerHTML='';
+ CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+ const card=document.createElement('div'); card.className='cat-card';
+ card.innerHTML=`<div class="cat-header"><span>${cat.icon}</span><span>${cat.label}</span></div><div class="cat-body" id="cb-${cat.id}"></div>`;
+ grid.appendChild(card);
+ renderCatBody(cat.id);
+ });
+ atualizarSelectsP3();
+}
+
+function renderCatBody(catId) {
+ const body=document.getElementById('cb-'+catId); if(!body) return;
+ body.innerHTML='';
+ const ativos=profsAtivos(catId);
+ if(ativos.length===0){
+ body.innerHTML=`<div class="sem-cadastro">Nenhum profissional cadastrado nesta categoria.<br><small>Acesse <strong>Painel Admin</strong> para adicionar.</small></div>`;
+ return;
+ }
+ (estado[catId]||[{nome:'',turno:turnoPlantao(),obs:''}]).forEach((slot,i)=>{
+ const row=document.createElement('div'); row.className='prof-row';
+ // Select nome
+ const selNome=document.createElement('select'); selNome.className='sel-prof';
+ selNome.innerHTML=`<option value="">— Selecionar —</option>`+
+ ativos.map(p=>`<option value="${p.nome}" ${slot.nome===p.nome?'selected':''}>${abr(p.nome)}</option>`).join('');
+ selNome.title = slot.nome||'';
+ selNome.addEventListener('change',e=>{ estado[catId][i].nome=e.target.value; selNome.title=e.target.value; });
+ // Select turno — opções baseadas no turno do plantão
+ const disponiveis = turnosProfDisponiveis();
+ const selTurno=document.createElement('select'); selTurno.className='sel-turno-prof';
+ selTurno.innerHTML=disponiveis.map(t=>`<option value="${t.v}" ${slot.turno===t.v?'selected':''}>${t.l}</option>`).join('');
+ selTurno.addEventListener('change',e=>{ estado[catId][i].turno=e.target.value; });
+ // Input obs
+ const inObs=document.createElement('input'); inObs.type='text'; inObs.className='inp-obs-prof';
+ inObs.placeholder='Obs.'; inObs.value=slot.obs||'';
+ inObs.addEventListener('input',e=>{ estado[catId][i].obs=e.target.value; });
+ row.appendChild(selNome); row.appendChild(selTurno); row.appendChild(inObs);
+ if(i>0){
+ const btnRm=document.createElement('button'); btnRm.className='btn-rm'; btnRm.textContent='';
+ btnRm.addEventListener('click',()=>{ estado[catId].splice(i,1); renderCatBody(catId); });
+ row.appendChild(btnRm);
+ }
+ body.appendChild(row);
+ });
+ const btnAdd=document.createElement('button'); btnAdd.className='btn-add-row'; btnAdd.textContent='+ Adicionar';
+ btnAdd.addEventListener('click',()=>{ estado[catId].push({nome:'',turno:turnoPlantao(),obs:''}); renderCatBody(catId); });
+ body.appendChild(btnAdd);
+}
+
+function atualizarSelectsP3() {
+ const p3ativos=profsAtivos('p3');
+ ['p3m-nome','p3t-nome'].forEach(id=>{
+ const sel=document.getElementById(id); if(!sel) return;
+ const cur=sel.value;
+ sel.innerHTML=`<option value="">— Selecionar P3 —</option>`+
+ p3ativos.map(p=>`<option value="${p.nome}" ${cur===p.nome?'selected':''}>${abr(p.nome)}</option>`).join('');
+ });
+}
+
+async function novoRegistro() {
+ editKey=null;
+ // Data e turno em branco — profissional deve preencher
+ document.getElementById('f-data').value = '';
+ document.getElementById('f-turno').value = '';
+
+ document.getElementById('f-obs').value='';
+ document.getElementById('p3m-nome').value='';
+ document.getElementById('p3m-obs').value='';
+ document.getElementById('p3t-nome').value='';
+ document.getElementById('p3t-obs').value='';
+ document.getElementById('msg-edit').textContent='';
+ const btn=document.getElementById('btn-salvar');
+ btn.disabled=false;
+ btn.textContent=' Registrar Plantão';
+ initEstado(); rebuildarForm();
+}
+window.novoRegistro=novoRegistro;
+
+// Ao mudar data ou turno: carrega registro existente do Firebase ou limpa o form
+async function carregarPlantao() {
+ const data = document.getElementById('f-data').value;
+ const turno = document.getElementById('f-turno').value;
+ if (!data || !turno) return;
+ const chave = data + '_' + turno;
+ const snap = await getDoc(doc(db, 'plantoes', chave));
+ if (snap.exists()) {
+   // Documento existe nesta data/turno — carrega
+   const r = snap.data();
+   editKey = chave;
+   document.getElementById('f-obs').value = r.obs || '';
+   document.getElementById('p3m-nome').value = r.equipe?.p3?.manha?.nome || '';
+   document.getElementById('p3m-obs').value = r.equipe?.p3?.manha?.obs || '';
+   document.getElementById('p3t-nome').value = r.equipe?.p3?.tarde?.nome || '';
+   document.getElementById('p3t-obs').value = r.equipe?.p3?.tarde?.obs || '';
+   initEstado();
+   CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+     const pp = r.equipe?.[cat.id];
+     if (pp && pp.length > 0) estado[cat.id] = pp.map(p=>({nome:p.nome||'',turno:p.turno||turno,obs:p.obs||''}));
+   });
+   document.getElementById('msg-edit').textContent = `Editando: ${fmtData(data)} — ${turno}`;
+   document.getElementById('btn-salvar').textContent = 'Salvar Alterações';
+ } else if (editKey) {
+   // Estamos em modo edição e a nova data/turno está vazia — preserva os dados
+   // só atualiza o label para indicar que vai criar novo registro
+   document.getElementById('msg-edit').textContent = `Salvando em: ${fmtData(data)} — ${turno} (nova data)`;
+   document.getElementById('btn-salvar').textContent = 'Salvar Alterações';
+ } else {
+   // Novo registro — limpa tudo
+   editKey = null;
+   document.getElementById('f-obs').value = '';
+   document.getElementById('p3m-nome').value = '';
+   document.getElementById('p3m-obs').value = '';
+   document.getElementById('p3t-nome').value = '';
+   document.getElementById('p3t-obs').value = '';
+   document.getElementById('msg-edit').textContent = '';
+   document.getElementById('btn-salvar').textContent = 'Registrar Plantão';
+   initEstado();
+   CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+     (estado[cat.id]||[]).forEach(slot=>{ if(!slot.nome) slot.turno = turno; });
+   });
+ }
+ rebuildarForm();
+ verificarBloqueoCenso();
+}
+
+document.getElementById('f-data').addEventListener('change', carregarPlantao);
+document.getElementById('f-turno').addEventListener('change', carregarPlantao);
+
+async function salvar() {
+ const data =document.getElementById('f-data').value;
+ const turno=document.getElementById('f-turno').value;
+ const obs =document.getElementById('f-obs').value.trim();
+ if(!data){ toast(' Selecione a data!','#E53E3E'); return; }
+ const equipe={};
+ CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+ equipe[cat.id]=(estado[cat.id]||[]).filter(p=>p.nome.trim()!=='');
+ });
+ equipe.p3={
+ manha:{ nome:document.getElementById('p3m-nome').value, obs:document.getElementById('p3m-obs').value },
+ tarde:{ nome:document.getElementById('p3t-nome').value, obs:document.getElementById('p3t-obs').value }
+ };
+ const key = data+'_'+turno;
+ // Verifica se já existe para distinguir registro x edição
+ const jaExiste = (await getDoc(doc(db,'plantoes',key))).exists();
+ const agora = new Date().toISOString();
+ const autorAtual = usuarioAtual ? { nome: usuarioAtual.nome, uid: usuarioAtual.uid } : null;
+ const reg = { key, data, turno, obs, equipe, atualizadoEm: agora };
+ if(!jaExiste){
+ reg.registradoPor = autorAtual;
+ reg.registradoEm = agora;
+ } else {
+ // Preserva quem registrou, adiciona quem editou
+ const docAtual = (await getDoc(doc(db,'plantoes',key))).data();
+ reg.registradoPor = docAtual.registradoPor || null;
+ reg.registradoEm = docAtual.registradoEm || null;
+ reg.editadoPor = autorAtual;
+ reg.editadoEm = agora;
+ }
+ const btn=document.getElementById('btn-salvar');
+ btn.disabled=true; btn.textContent='Salvando...';
+ try {
+ await setDoc(doc(db,'plantoes',key),reg);
+ // Salva censo junto, se tiver algum dado preenchido
+ const dadosCenso={key, data, turno};
+ CAMPOS_CENSO.forEach(c=>{ dadosCenso[c]=parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0; });
+ dadosCenso.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dadosCenso[c],0);
+ const temCenso=CAMPOS_CENSO.some(c=>dadosCenso[c]>0);
+ if(temCenso){
+ const jaExisteCenso=(await getDoc(doc(db,'censo',key))).exists();
+ dadosCenso[jaExisteCenso?'editadoEm':'registradoEm']=new Date().toISOString();
+ await setDoc(doc(db,'censo',key),dadosCenso);
+ }
+ btn.disabled=false; btn.textContent=' Registrar Plantão';
+ abrirModalConfirmacao(reg);
+ } catch(e){ toast(' '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent=' Registrar Plantão'; }
+}
+window.salvar=salvar;
+function abrirModalConfirmacao(reg) {
+ const [a,m,d]=reg.data.split('-');
+ const ds=DIAS[new Date(reg.data+'T12:00:00').getDay()];
+ const meds=(reg.equipe?.medico||[]).map(p=>nomeWA(p.nome,'medico')).filter(Boolean);
+ const enfs=(reg.equipe?.enfermeiro||[]).map(p=>abr(p.nome)).filter(Boolean);
+ const tecs=(reg.equipe?.tec_enf||[]).map(p=>abr(p.nome)).filter(Boolean);
+ let resumo=`<div style="font-size:0.9rem;font-weight:700;margin-bottom:10px;color:var(--azul)">${d}/${m}/${a} — ${ds} · ${reg.turno}</div>`;
+ if(meds.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;"> <b>Médicos:</b> ${meds.join(', ')}</div>`;
+ if(enfs.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;"> <b>Enfermeiros:</b> ${enfs.join(', ')}</div>`;
+ if(tecs.length) resumo+=`<div style="font-size:0.82rem;margin-bottom:4px;"> <b>Téc. Enf.:</b> ${tecs.join(', ')}</div>`;
+ if(reg.obs) resumo+=`<div style="font-size:0.82rem;margin-top:6px;color:var(--cinza);"> ${reg.obs}</div>`;
+ document.getElementById('modal-conf-resumo').innerHTML=resumo;
+ document.getElementById('modal-conf-wa').onclick=()=>{ window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoWA(reg)),'_blank'); };
+ document.getElementById('modal-confirmacao').classList.remove('hidden');
+}
+window.fecharModalConf=function(){ document.getElementById('modal-confirmacao').classList.add('hidden'); novoRegistro(); };
+window.fecharModalConfNovo=function(){ document.getElementById('modal-confirmacao').classList.add('hidden'); novoRegistro(); };
+
+// ===== LISTENER PLANTÕES =====
+onSnapshot(query(collection(db,'plantoes'),orderBy('data','desc')), snap=>{
+ plantoes=snap.docs.map(d=>d.data());
+ const panelConsultar=document.getElementById('panel-consultar');
+ const panelInicio=document.getElementById('panel-inicio');
+ if(panelInicio?.classList.contains('active')) renderInicio();
+ if(document.getElementById('panel-consprod')?.classList.contains('active')) renderConsProd();
+ if(panelConsultar.classList.contains('active')){
+ if(document.getElementById('view-categoria').style.display==='none') renderLista(plantoesFiltrados());
+ else renderTabelaCat();
+ }
+ atualizarBadge();
+ document.getElementById('loading').style.display='none';
+},err=>{
+ document.getElementById('loading').style.display='none';
+ toast(' Erro: '+err.message,'#E53E3E');
+});
+
+function atualizarBadge() {
+ // Badge removido a pedido
+}
+
+// ===== CONSULTA PLANTÕES =====
+function plantoesFiltrados() {
+ const ini =document.getElementById('fi-ini').value;
+ const fim =document.getElementById('fi-fim').value;
+ const trn =document.getElementById('fi-turno').value;
+ const nome=document.getElementById('fi-nome').value.trim().toLowerCase();
+ return plantoes.filter(r=>{
+ if(ini && r.data<ini) return false;
+ if(fim && r.data>fim) return false;
+ if(trn && r.turno!==trn) return false;
+ if(nome){
+ const todos=CATS.map(c=>c.id==='p3'
+ ? [(r.equipe.p3?.manha?.nome||''),(r.equipe.p3?.tarde?.nome||'')].join(' ')
+ : (r.equipe[c.id]||[]).map(p=>p.nome).join(' ')
+ ).join(' ');
+ if(!todos.toLowerCase().includes(nome)) return false;
+ }
+ return true;
+ });
+}
+
+function filtrar(){ renderLista(plantoesFiltrados()); }
+window.filtrar=filtrar;
+function limparFiltros(){
+ ['fi-ini','fi-fim','fi-nome'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('fi-turno').value='';
+ renderLista(plantoes);
+}
+window.limparFiltros=limparFiltros;
+
+function renderLista(lista) {
+ const el=document.getElementById('lista');
+ if(lista.length===0){ el.innerHTML='<div class="empty"><div class="big"></div><div>Nenhum plantão encontrado.</div></div>'; return; }
+ el.innerHTML='';
+ lista.forEach(r=>{
+ const med=(r.equipe.medico||[]).map(p=>abr(p.nome)).filter(Boolean).slice(0,2).join(' · ')||'—';
+ const div=document.createElement('div'); div.className='plantao-card';
+ div.innerHTML=`
+ <div class="pc-header" onclick="toggleCard(this)">
+ <span class="pc-data">${fmtData(r.data)}</span>
+ <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'':''} ${r.turno}</span>
+ <span class="pc-resumo"> ${med}</span>
+ <span class="chevron"></span>
+ </div>
+ <div class="pc-body">
+ <div class="det-grid">${renderDetalhe(r)}</div>
+ ${r.obs?`<div class="obs-bloco"> ${r.obs}</div>`:''}
+ <div class="pc-acoes">
+ ${window._isAdmin ? `<button class="btn-edit" onclick="editarPlantao('${r.key}')">Editar</button>` : ''}
+ <button class="btn-wa" onclick="compartilharWA('${r.key}')">WhatsApp</button>
+ ${window._isAdmin ? `<button class="btn-del" onclick="abrirExcluir('${r.key}')">Excluir</button>` : ''}
+ </div>
+ <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--cinza-borda);font-size:0.72rem;color:var(--cinza);line-height:1.8;">
+ ${r.registradoPor ? ` Registrado por: <strong>${r.registradoPor.nome}</strong>${r.registradoEm?' · '+new Date(r.registradoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}` : ''}
+ ${r.editadoPor ? `<br>Editado por: <strong>${r.editadoPor.nome}</strong>${r.editadoEm?' · '+new Date(r.editadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}` : ''}
+ </div>
+ </div>`;
+ el.appendChild(div);
+ });
+}
+
+function renderDetalhe(r) {
+ let html='';
+ CATS.forEach(cat=>{
+ let conteudo;
+ if(cat.id==='p3'){
+ const p3=r.equipe?.p3;
+ const mn=p3?.manha?.nome; const tn=p3?.tarde?.nome;
+ if(!mn && !tn){ conteudo='<div class="ausente">—</div>'; }
+ else { conteudo=`${mn?`<div class="det-prof"> ${abr(mn)}${p3.manha.obs?` <span class="det-obs">${p3.manha.obs}</span>`:''}</div>`:''}
+ ${tn?`<div class="det-prof"> ${abr(tn)}${p3.tarde.obs?` <span class="det-obs">${p3.tarde.obs}</span>`:''}</div>`:'`'}`; }
+ } else {
+ const pp=r.equipe?.[cat.id]||[];
+ conteudo=pp.length===0?'<div class="ausente">—</div>':pp.map(p=>`<div class="det-prof">${abr(p.nome)} <span class="det-turno">${SIGLAS[p.turno]||p.turno}</span>${p.obs?` <span class="det-obs">${p.obs}</span>`:''}</div>`).join('');
+ }
+ html+=`<div class="det-cat"><div class="det-cat-titulo">${cat.icon} ${cat.label}</div>${conteudo}</div>`;
+ });
+ // Bloco censo
+ const censo=censos.find(c=>c.key===r.key);
+ if(censo){
+ html+=`<div class="det-cat" style="grid-column:1/-1;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
+ <div class="det-cat-titulo" style="color:#1D4ED8;">Censo do Plantão</div>
+ <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+ <span style="font-size:0.8rem;">Geral: <b>${censo.nemo||0}</b></span>
+ <span style="font-size:0.8rem;">Respiratória: <b>${censo.dory||0}</b></span>
+ <span style="font-size:0.8rem;">S.Verm.: <b>${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}</b></span>
+ <span style="font-size:0.8rem;font-weight:700;color:#1D4ED8;">Total: ${censo.totalInternados||0}</span>
+ <span style="font-size:0.8rem;color:var(--cinza);">|</span>
+ <span style="font-size:0.8rem;">⏳ Reg.: <b>${censo.regulacao||0}</b></span>
+ <span style="font-size:0.8rem;">Intub.: <b>${censo.intubados||0}</b></span>
+ <span style="font-size:0.8rem;">CPAP: <b>${censo.cpap||0}</b></span>
+ <span style="font-size:0.8rem;">VNI: <b>${censo.vni||0}</b></span>
+ <span style="font-size:0.8rem;">Isol.: <b>${censo.isolamento||0}</b></span>
+ </div>
+ </div>`;
+ }
+ return html;
+}
+
+window.toggleCard=function(h){ const b=h.nextElementSibling; const c=h.querySelector('.chevron'); b.classList.toggle('open'); c.classList.toggle('open',b.classList.contains('open')); };
+
+window.editarPlantao=function(key){
+ const r=plantoes.find(x=>x.key===key); if(!r) return;
+ editKey=key;
+ document.getElementById('f-data').value=r.data;
+ document.getElementById('f-turno').value=r.turno;
+ document.getElementById('f-obs').value=r.obs||'';
+ document.getElementById('p3m-nome').value=r.equipe?.p3?.manha?.nome||'';
+ document.getElementById('p3m-obs').value=r.equipe?.p3?.manha?.obs||'';
+ document.getElementById('p3t-nome').value=r.equipe?.p3?.tarde?.nome||'';
+ document.getElementById('p3t-obs').value=r.equipe?.p3?.tarde?.obs||'';
+ initEstado();
+ CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+ const pp=r.equipe?.[cat.id];
+ if(pp && pp.length>0) estado[cat.id]=pp.map(p=>({nome:p.nome||'',turno:p.turno||'DIURNO',obs:p.obs||''}));
+ });
+ rebuildarForm();
+ document.getElementById('msg-edit').textContent=' Editando: '+fmtData(r.data)+' — '+r.turno;
+ document.getElementById('btn-salvar').textContent=' Salvar Alterações';
+ switchTab('registrar');
+};
+
+// EXCLUIR
+window.abrirExcluir=function(key){
+ keyExcluir=key;
+ document.getElementById('modal-input').value='';
+ document.getElementById('btn-modal-confirm').classList.remove('ativo');
+ document.getElementById('modal-excluir').classList.remove('hidden');
+ setTimeout(()=>document.getElementById('modal-input').focus(),100);
+};
+document.getElementById('modal-input').addEventListener('input',e=>{
+ document.getElementById('btn-modal-confirm').classList.toggle('ativo',e.target.value.trim().toUpperCase()==='EXCLUIR');
+});
+window.fecharModal=()=>{ document.getElementById('modal-excluir').classList.add('hidden'); keyExcluir=null; };
+window.confirmarExclusao=async function(){
+ if(document.getElementById('modal-input').value.trim().toUpperCase()!=='EXCLUIR') return;
+ if(!keyExcluir) return;
+ try{ await deleteDoc(doc(db,'plantoes',keyExcluir)); toast(' Plantão excluído.'); fecharModal(); }
+ catch(e){ toast(' '+e.message,'#E53E3E'); }
+};
+
+// WHATSAPP
+function nomeWA(nome, catId) {
+ const abreviado = abr(nome);
+ const eMedico = catId === 'medico' || catId === 'evolucao' || catId === 'p3';
+ return eMedico ? `DR. ${abreviado}` : abreviado;
+}
+
+function gerarTextoWA(r) {
+ const d=r.data.split('-'); const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
+ let txt=`*DATA: ${d[2]}/${d[1]}/${d[0]} — ${ds}*\n*Plantão: ${r.turno}*\n\n`;
+ CATS.filter(c=>c.id!=='p3').forEach(cat=>{
+ const pp=r.equipe?.[cat.id]||[];
+ if(!pp.length) return;
+ const nomes=pp.map(p=>{
+   let n=nomeWA(p.nome,cat.id);
+   if(p.turno==='MANHA') n+=' (Manhã)';
+   else if(p.turno==='TARDE') n+=' (Tarde)';
+   if(p.obs) n+=` (${p.obs})`;
+   return n;
+ }).join(', ');
+ txt+=`*${cat.label}:* ${nomes}\n\n`;
+ });
+ const p3=r.equipe?.p3;
+ if(p3?.manha?.nome||p3?.tarde?.nome){
+ txt+=`*P3 Manhã:* ${p3.manha?.nome?nomeWA(p3.manha.nome,'medico'):'—'}${p3.manha?.obs?' ('+p3.manha.obs+')':''}\n`;
+ txt+=`*P3 Tarde:* ${p3.tarde?.nome?nomeWA(p3.tarde.nome,'medico'):'—'}${p3.tarde?.obs?' ('+p3.tarde.obs+')':''}\n\n`;
+ }
+ if(r.obs) txt+=`*Obs:* ${r.obs}\n\n`;
+ // Censo do plantão
+ const censo=censos.find(c=>c.key===r.key);
+ if(censo){
+ txt+=`*CENSO DO PLANTÃO*\n`;
+ const svObs=censo.vermelha_obs||0;
+ const svTxt=svObs>0?`${censo.vermelha||0}+${svObs}(OBS)`:`${censo.vermelha||0}`;
+ txt+=`*Internados:* Geral ${censo.nemo||0} · Respiratória ${censo.dory||0} · Sala Verm. ${svTxt} · Isolamento: ${censo.isolamento||0} · *Total: ${censo.totalInternados||0}*\n`;
+ txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
+ txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0}\n`;
+ if(censo.obs_medicacao) txt+=`*Obs. Geral (Medicação):* ${censo.obs_medicacao}\n`;
+ }
+ return txt + (usuarioAtual ? `\n_Registrado por: ${usuarioAtual.nome}_` : '');
+}
+
+window.compartilharWA=function(key){
+ const r=plantoes.find(x=>x.key===key); if(!r) return;
+ window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoWA(r)),'_blank');
+};
+
+// ===== VIEW CATEGORIA =====
+let viewAtual='lista';
+window.setView=function(v){
+ viewAtual=v;
+ document.getElementById('btn-view-lista').classList.toggle('active',v==='lista');
+ document.getElementById('btn-view-cat').classList.toggle('active',v==='categoria');
+ document.getElementById('view-lista').style.display=v==='lista'?'block':'none';
+ document.getElementById('view-categoria').style.display=v==='categoria'?'block':'none';
+ if(v==='categoria'){
+ const sel=document.getElementById('fi-cat');
+ sel.innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+ renderTabelaCat();
+ }
+};
+
+window.renderTabelaCat=function(){
+ const catFiltro=document.getElementById('fi-cat').value;
+ const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ const wrap=document.getElementById('tabela-cat-wrap');
+ if(lista.length===0){ wrap.innerHTML='<div class="empty"><div class="big"></div><div>Nenhum plantão no período.</div></div>'; return; }
+ const catsRender=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
+ let html='';
+ // Uma coluna por DATA (não por plantão) — siglas acumulam D+N no mesmo dia
+ const datas=[...new Set(lista.map(r=>r.data))].sort();
+
+ catsRender.forEach(cat=>{
+ const nomeSet=new Set();
+ lista.forEach(r=>{
+ if(cat.id==='p3'){
+ if(r.equipe?.p3?.manha?.nome) nomeSet.add(r.equipe.p3.manha.nome);
+ if(r.equipe?.p3?.tarde?.nome) nomeSet.add(r.equipe.p3.tarde.nome);
+ } else {
+ (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome) nomeSet.add(p.nome); });
+ }
+ });
+ if(nomeSet.size===0) return;
+ const nomes=[...nomeSet].sort();
+ html+=`<div style="margin-bottom:18px;">
+ <div class="cat-secao-titulo">${cat.icon} ${cat.label} <span style="font-weight:400;font-size:0.75rem;">(${nomes.length} profissional${nomes.length>1?'is':''})</span></div>
+ <div class="tabela-wrap"><table class="tabela-cat">
+ <thead><tr>
+ <th class="th-nome">Profissional</th>
+ ${datas.map(d=>{
+ const [,m,dd]=d.split('-');
+ const ds=DIAS[new Date(d+'T12:00:00').getDay()];
+ return `<th class="th-data">${dd}/${m}<br><small>${ds}</small></th>`;
+ }).join('')}
+ <th class="th-total">Total</th>
+ </tr></thead>
+ <tbody>
+ ${nomes.map(nome=>{
+ let total=0;
+ const cels=datas.map(data=>{
+   const plantoesNoDia=lista.filter(r=>r.data===data);
+   let itens=[]; // {sigla, peso}
+   plantoesNoDia.forEach(r=>{
+     if(cat.id==='p3'){
+       if(r.equipe?.p3?.manha?.nome===nome) itens.push({sigla:'EM',peso:0.5});
+       if(r.equipe?.p3?.tarde?.nome===nome) itens.push({sigla:'ET',peso:0.5});
+     } else if(cat.id==='evolucao'){
+       (r.equipe?.evolucao||[]).forEach(p=>{
+         if(p.nome===nome){
+           const ev=siglaEvolucao(data);
+           itens.push({sigla:ev.sigla, peso:ev.peso});
+         }
+       });
+     } else {
+       (r.equipe?.[cat.id]||[]).forEach(p=>{
+         if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0], peso:1});
+       });
+     }
+   });
+   if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EM+EM ou ET+ET
+   if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EVS+EVS etc
+   if(itens.length){
+     const peso=itens.reduce((s,x)=>s+x.peso,0);
+     total=Math.round((total+peso)*10)/10;
+     return `<td>${itens.map(x=>`<span class="sigla-${x.sigla}">${x.sigla}</span>`).join(' ')}</td>`;
+   }
+   return '<td style="color:var(--cinza-borda);">—</td>';
+ }).join('');
+ return `<tr><td class="td-nome" title="${nome}">${abr(nome)}</td>${cels}<td class="td-total">${fmtTotal(total)}</td></tr>`;
+ }).join('')}
+ </tbody>
+ </table></div>
+ </div>`;
+ });
+ wrap.innerHTML=html||'<div class="empty"><div class="big"></div><div>Sem dados para esta categoria.</div></div>';
+};
+
+window.exportarCatCSV=function(){
+ const catFiltro=document.getElementById('fi-cat').value;
+ const lista=plantoesFiltrados().sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ if(!lista.length){ toast(' Nenhum dado.','#E53E3E'); return; }
+ const datas=[...new Set(lista.map(r=>r.data))].sort();
+ const catsEx=catFiltro?CATS.filter(c=>c.id===catFiltro):CATS;
+ let csv='\uFEFF';
+ catsEx.forEach(cat=>{
+ const nomeSet=new Set();
+ lista.forEach(r=>{
+ if(cat.id==='p3'){ if(r.equipe?.p3?.manha?.nome) nomeSet.add(r.equipe.p3.manha.nome); if(r.equipe?.p3?.tarde?.nome) nomeSet.add(r.equipe.p3.tarde.nome); }
+ else (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome) nomeSet.add(p.nome); });
+ });
+ if(!nomeSet.size) return;
+ const nomes=[...nomeSet].sort();
+ csv+=`\n${cat.label.toUpperCase()}\n`;
+ csv+=['Profissional',...datas.map(d=>fmtData(d)),'Total'].join(';')+'\n';
+ nomes.forEach(nome=>{
+   let total=0;
+   const linha=[nome];
+   datas.forEach(data=>{
+     const plantoesNoDia=lista.filter(r=>r.data===data);
+     let itens=[];
+     plantoesNoDia.forEach(r=>{
+       if(cat.id==='p3'){
+         if(r.equipe?.p3?.manha?.nome===nome) itens.push({sigla:'EM',peso:0.5});
+         if(r.equipe?.p3?.tarde?.nome===nome) itens.push({sigla:'ET',peso:0.5});
+       } else if(cat.id==='evolucao'){
+         (r.equipe?.evolucao||[]).forEach(p=>{
+           if(p.nome===nome){ const ev=siglaEvolucao(data); itens.push({sigla:ev.sigla,peso:ev.peso}); }
+         });
+       } else {
+         (r.equipe?.[cat.id]||[]).forEach(p=>{
+           if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0],peso:1});
+         });
+       }
+     });
+     if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
+     if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
+     if(itens.length){
+       const peso=itens.reduce((s,x)=>s+x.peso,0);
+       total=Math.round((total+peso)*10)/10;
+       linha.push(itens.map(x=>x.sigla).join('+'));
+     } else linha.push('');
+   });
+   linha.push(fmtTotal(total)); csv+=linha.join(';')+'\n';
+ });
+ });
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a'); a.href=url; a.download=`escala_uped_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+ toast(' CSV exportado!');
+};
+
+// ===== AUTENTICAÇÃO =====
+window.fazerLogin = async function() {
+ const email = document.getElementById('login-email').value.trim();
+ const senha = document.getElementById('login-senha').value;
+ const erroEl = document.getElementById('login-erro');
+ const btn = document.getElementById('btn-login');
+ if(!email||!senha){ erroEl.textContent='Preencha e-mail e senha.'; return; }
+ btn.disabled=true; btn.textContent='Entrando...';
+ try {
+ await signInWithEmailAndPassword(auth, email, senha);
+ } catch(e) {
+ erroEl.textContent = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
+ ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
+ btn.disabled=false; btn.textContent='Entrar';
+ }
+};
+document.getElementById('btn-login').addEventListener('click', window.fazerLogin);
+document.getElementById('login-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') window.fazerLogin(); });
+document.getElementById('login-email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('login-senha').focus(); });
+
+document.getElementById('btn-esqueci-senha').addEventListener('click', async ()=>{
+ const email = document.getElementById('login-email').value.trim();
+ const erroEl = document.getElementById('login-erro');
+ if(!email){ erroEl.textContent='Digite seu e-mail acima primeiro.'; return; }
+ try {
+ await sendPasswordResetEmail(auth, email);
+ erroEl.style.color='var(--verde)';
+ erroEl.textContent=' E-mail de redefinição enviado! Verifique sua caixa de entrada.';
+ setTimeout(()=>{ erroEl.textContent=''; erroEl.style.color=''; },6000);
+ } catch(e) {
+ erroEl.textContent = 'E-mail não encontrado no sistema.';
+ }
+});
+
+document.getElementById('btn-confirmar-senha').addEventListener('click', async ()=>{
+ const atual = document.getElementById('as-atual').value;
+ const nova = document.getElementById('as-nova').value;
+ const confirma = document.getElementById('as-confirma').value;
+ const erroEl = document.getElementById('as-erro');
+ if(!atual||!nova||!confirma){ erroEl.textContent='Preencha todos os campos.'; return; }
+ if(nova !== confirma){ erroEl.textContent='As senhas não coincidem.'; return; }
+ if(nova.length <6){ erroEl.textContent='Mínimo 6 caracteres.'; return; }
+ erroEl.textContent='';
+ try {
+ const cred = EmailAuthProvider.credential(auth.currentUser.email, atual);
+ await reauthenticateWithCredential(auth.currentUser, cred);
+ await updatePassword(auth.currentUser, nova);
+ document.getElementById('modal-alterar-senha').classList.add('hidden');
+ ['as-atual','as-nova','as-confirma'].forEach(id=>document.getElementById(id).value='');
+ toast(' Senha alterada com sucesso!');
+ } catch(e) {
+ erroEl.textContent = e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'
+ ? 'Senha atual incorreta.' : 'Erro ao alterar: '+e.message;
+ }
+});
+
+window.fazerLogout = async function() {
+ const btn = document.getElementById('btn-login');
+ if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
+ document.getElementById('login-email').value='';
+ document.getElementById('login-senha').value='';
+ document.getElementById('login-erro').textContent='';
+ await signOut(auth);
+};
+
+let _sistemaInicializado = false;
+
+// Listener de autenticação — ponto central de controle
+onAuthStateChanged(auth, async user => {
+ if(!user) {
+ usuarioAtual = null;
+ _sistemaInicializado = false;
+ const btn = document.getElementById('btn-login');
+ if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
+ document.getElementById('login-erro').textContent='';
+ document.getElementById('tela-login').style.display='flex';
+ document.getElementById('loading').style.display='none';
+ document.getElementById('header-usuario').style.display='none';
+ return;
+ }
+ document.getElementById('tela-login').style.display='none';
+ const perfilSnap = await getDoc(doc(db,'usuarios',user.uid));
+ const perfil = perfilSnap.exists() ? perfilSnap.data().perfil : 'recepcao';
+ const nome = perfilSnap.exists() && perfilSnap.data().nome ? perfilSnap.data().nome : (user.displayName || user.email.split('@')[0]);
+ usuarioAtual = { uid:user.uid, email:user.email, nome, perfil };
+ document.getElementById('header-usuario').style.display='flex';
+ document.getElementById('header-nome').textContent = nome;
+ document.getElementById('header-perfil').textContent = perfil==='admin' ? ' Administrador' : ' Recepção';
+ const btnLogout = document.getElementById('btn-logout');
+ if(btnLogout) btnLogout.onclick = window.fazerLogout;
+ const btnAlterarSenha = document.getElementById('btn-alterar-senha');
+ if(btnAlterarSenha) btnAlterarSenha.onclick = ()=>{ document.getElementById('modal-alterar-senha').classList.remove('hidden'); document.getElementById('as-atual').focus(); };
+ aplicarPermissoes(perfil);
+ if(!_sistemaInicializado){
+ _sistemaInicializado = true;
+ inicializarSistema();
+ } else {
+ // Re-login (ex: troca de usuário) — reaplica permissões e volta ao início
+ switchTab('inicio');
+ }
+});
+
+// ===== GERENCIAR USUÁRIOS =====
+window.criarUsuario = async function() {
+ const email = document.getElementById('nu-email').value.trim();
+ const senha = document.getElementById('nu-senha').value;
+ const nome = document.getElementById('nu-nome').value.trim();
+ const perfil= document.getElementById('nu-perfil').value;
+ const erroEl= document.getElementById('nu-erro');
+ if(!email||!senha||!nome){ erroEl.textContent='Preencha todos os campos.'; return; }
+ if(senha.length<6){ erroEl.textContent='Senha mínima: 6 caracteres.'; return; }
+ erroEl.textContent='';
+ try {
+ // Cria auth secundário para não deslogar o admin atual
+ const { initializeApp: initApp2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+ const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2, updateProfile: updProfile2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+ const app2 = initApp2({
+ apiKey:"AIzaSyCQt-F1obzfRaxwZcytOCIvu2iMRIk4cCg",
+ authDomain:"uped-plantao.firebaseapp.com",
+ projectId:"uped-plantao",
+ storageBucket:"uped-plantao.firebasestorage.app",
+ messagingSenderId:"875342869066",
+ appId:"1:875342869066:web:db1b3f71c3ae87330eecb3"
+ }, 'app2-'+Date.now());
+ const auth2 = getAuth2(app2);
+ const cred = await createUser2(auth2, email, senha);
+ await updProfile2(cred.user, { displayName: nome });
+ await setDoc(doc(db,'usuarios',cred.user.uid), { email, nome, perfil, criadoEm:new Date().toISOString() });
+ await auth2.signOut();
+ document.getElementById('nu-email').value='';
+ document.getElementById('nu-senha').value='';
+ document.getElementById('nu-nome').value='';
+ toast(' Usuário criado com sucesso!');
+ carregarUsuarios();
+ } catch(e) {
+ erroEl.textContent = e.code==='auth/email-already-in-use' ? 'E-mail já cadastrado.' : 'Erro: '+e.message;
+ }
+};
+
+async function carregarUsuarios() {
+ const el = document.getElementById('lista-usuarios');
+ if(!el) return;
+ const {getDocs, collection:col} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+ const snap = await getDocs(col(db,'usuarios'));
+ if(snap.empty){ el.innerHTML='<p style="font-size:0.83rem;color:var(--cinza);padding:12px;">Nenhum usuário cadastrado ainda.</p>'; return; }
+ el.innerHTML = snap.docs.map(d=>{
+ const u=d.data();
+ const isMaster = u.email === EMAIL_MASTER;
+ if(isMaster) return '';
+ return `<div class="prof-item" style="flex-wrap:wrap;gap:6px;align-items:center;">
+ <div style="flex:1;min-width:140px;">
+ <div style="font-weight:600;font-size:0.85rem;">${u.nome}</div>
+ <div style="font-size:0.74rem;color:var(--cinza);">${u.email}</div>
+ </div>
+ <span class="${u.perfil==='admin'?'badge-ativo':'badge-inativo'}">${u.perfil==='admin'?'Admin':'Recepção'}</span>
+ <button onclick="resetarSenhaUsuario('${u.email}','${u.nome.replace(/'/g,"\\'")}')" style="padding:4px 10px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:6px;font-size:0.74rem;font-weight:600;cursor:pointer;">Reset senha</button>
+ <button class="btn-excluir-p" onclick="removerUsuario('${d.id}','${u.email}','${u.nome.replace(/'/g,"\\'")}')"></button>
+ </div>`;
+ }).join('');
+}
+window.carregarUsuarios=carregarUsuarios;
+
+window.resetarSenhaUsuario = async function(email, nome) {
+ if(!confirm(`Enviar e-mail de redefinição de senha para ${nome} (${email})?`)) return;
+ try {
+ await sendPasswordResetEmail(auth, email);
+ toast(` E-mail de redefinição enviado para ${nome}.`);
+ } catch(e) { toast(' Erro: '+e.message,'#E53E3E'); }
+};
+
+window.removerUsuario = async function(uid, email, nome) {
+ if(email === EMAIL_MASTER){ toast(' Esta conta não pode ser removida.','#E53E3E'); return; }
+ if(!confirm(`Remover usuário "${nome}"?`)) return;
+ await deleteDoc(doc(db,'usuarios',uid));
+ toast(' Usuário removido.');
+ carregarUsuarios();
+};
+
+function inicializarSistema() {
+ // Produção: pré-preenche com data de hoje
+ document.getElementById('fp-data').valueAsDate=new Date();
+ // Registrar: começa em branco
+ document.getElementById('f-data').value='';
+ document.getElementById('f-turno').value='';
+ aplicarPeriodoPadrao();
+ // Listener botão criar usuário
+ const btnCriar = document.getElementById('btn-criar-usuario');
+ if(btnCriar) btnCriar.addEventListener('click', window.criarUsuario);
+ initEstado();
+ rebuildarForm();
+ switchTab('inicio');
+}
+window.switchTab=function(tab, semSenha){
+ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+ document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+ const tabEl = document.querySelector(`[onclick="switchTab('${tab}')"]`);
+ if(tabEl) tabEl.classList.add('active');
+ const panel=document.getElementById('panel-'+tab);
+ if(panel) panel.classList.add('active');
+ if(tab==='inicio') renderInicio();
+ if(tab==='consultar'){
+ if(viewAtual==='lista') renderLista(plantoesFiltrados());
+ else { document.getElementById('fi-cat').innerHTML='<option value="">Todas as categorias</option>'+CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join(''); renderTabelaCat(); }
+ }
+ if(tab==='producao'){ verificarBloqueio(); }
+ if(tab==='consprod'){
+   const {ini,fim}=periodoUltimoMes();
+   const elIni=document.getElementById('cp-ini'); if(elIni&&!elIni.value) elIni.valueAsDate=ini;
+   const elFim=document.getElementById('cp-fim'); if(elFim&&!elFim.value) elFim.valueAsDate=fim;
+   renderConsProd();
+ }
+ if(tab==='gestao'){ renderDashboard(); filtrarProducao(); }
+ if(tab==='admin'){ carregarUsuarios(); renderListaProfs(); }
+};
+
+window.switchGestao=function(sec){
+ ['dash','hist','censo'].forEach(s=>{
+ const tab=document.getElementById('gtab-'+s);
+ const gsec=document.getElementById('gsec-'+s);
+ if(tab) tab.classList.toggle('active',s===sec);
+ if(gsec) gsec.style.display=s===sec?'block':'none';
+ });
+ aplicarPeriodoPadrao();
+ if(sec==='dash') renderDashboard();
+ if(sec==='hist') filtrarProducao();
+ if(sec==='censo'){ verificarBloqueoCenso(); filtrarCenso(); }
+};
+
+function aplicarPermissoes(perfil) {
+ const adm = perfil === 'admin';
+ window._isAdmin = adm;
+
+ // Abas visíveis
+ const tabGestao = document.querySelector('[onclick="switchTab(\'gestao\')"]');
+ if(tabGestao) tabGestao.style.display = adm ? '' : 'none';
+ const tabAdmin = document.getElementById('tab-admin');
+ if(tabAdmin) tabAdmin.style.display = adm ? '' : 'none';
+ // Consultar Produção — visível para todos
+ const tabConsProd = document.getElementById('tab-cons-prod');
+ if(tabConsProd) tabConsProd.style.display = '';
+
+ // Cards só para Recepção — admin já tem abas no topo
+ const cardsEl = document.getElementById('inicio-cards');
+ if(cardsEl){
+   if(adm){
+     cardsEl.style.display='none';
+   } else {
+     cardsEl.style.display='grid';
+     cardsEl.innerHTML = [
+       { tab:'registrar',  titulo:'Registrar Plantão',    desc:'Cadastre a escala do plantão atual' },
+       { tab:'consultar',  titulo:'Consultar Plantões',    desc:'Visualize os plantões registrados' },
+       { tab:'producao',   titulo:'Registro de Produção',  desc:'Registre os atendimentos do plantão' },
+       { tab:'consprod',   titulo:'Consultar Produção',    desc:'Reenvie produção e censo via WhatsApp' },
+     ].map(c=>`<div class="inicio-card" onclick="switchTab('${c.tab}')">
+       <div class="inicio-card-icon"></div>
+       <div class="inicio-card-titulo">${c.titulo}</div>
+       <div class="inicio-card-desc">${c.desc}</div>
+     </div>`).join('');
+   }
+ }
+}
+
+function renderConsProd(){
+  const el = document.getElementById('consprod-lista');
+  if(!el) return;
+
+  // Filtros
+  const ini = document.getElementById('cp-ini')?.value;
+  const fim = document.getElementById('cp-fim')?.value;
+  const trn = document.getElementById('cp-turno')?.value;
+
+  let lista = [...plantoes].sort((a,b)=>{
+    const dataDiff = b.data.localeCompare(a.data);
+    if(dataDiff !== 0) return dataDiff;
+    // Mesmo dia: Diurno antes de Noturno
+    if(a.turno==='DIURNO' && b.turno==='NOTURNO') return -1;
+    if(a.turno==='NOTURNO' && b.turno==='DIURNO') return 1;
+    return 0;
+  });
+  if(ini) lista = lista.filter(r=>r.data>=ini);
+  if(fim) lista = lista.filter(r=>r.data<=fim);
+  if(trn) lista = lista.filter(r=>r.turno===trn);
+
+  if(!lista.length){
+    el.innerHTML='<div class="empty"><div style="font-size:2rem;margin-bottom:8px;"></div><div>Nenhum plantão encontrado.</div></div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(r=>{
+    const [a,m,d]=r.data.split('-');
+    const ds=DIAS[new Date(r.data+'T12:00:00').getDay()];
+    const turnoLabel = r.turno==='DIURNO'?'Diurno':'Noturno';
+    const prod = producoes.find(p=>p.key===r.key);
+    const censo = censos.find(c=>c.key===r.key);
+    const prodInfo = prod
+      ? `Total: <b>${prod.total||0}</b> atend. &nbsp;·&nbsp; Azul: ${prod.azul||0} · Verde: ${prod.verde||0} · Amarela: ${prod.amarela||0} · Vermelha: ${prod.vermelha||0}`
+      : '<span style="color:var(--cinza);">Produção não registrada.</span>';
+    const censoInfo = censo
+      ? `Internados: <b>${censo.totalInternados||0}</b> &nbsp;·&nbsp; Geral: ${censo.nemo||0} · Resp.: ${censo.dory||0} · S.Verm.: ${censo.vermelha||0}${censo.vermelha_obs?'+'+censo.vermelha_obs+'(OBS)':''}`
+      : '<span style="color:var(--cinza);">Censo não registrado.</span>';
+    return `<div class="prod-hist-card">
+      <div class="prod-hist-header" onclick="toggleProdCard(this)">
+        <span>${d}/${m}/${a} — ${ds}</span>
+        <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${turnoLabel}</span>
+        <span style="margin-left:auto;font-size:0.78rem;color:var(--cinza);">
+          ${prod?'Prod. registrada':'Sem prod.'} &nbsp;|&nbsp; ${censo?'Censo registrado':'Sem censo'}
+        </span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="prod-hist-body">
+        <div style="font-size:0.83rem;margin-bottom:6px;"><b>Producao:</b> ${prodInfo}</div>
+        <div style="font-size:0.83rem;margin-bottom:12px;"><b>Censo:</b> ${censoInfo}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${prod?`<button onclick="compartilharWAProd(${JSON.stringify(prod).replace(/"/g,'&quot;')})" style="padding:8px 14px;background:#25D366;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.83rem;">Enviar Producao no WhatsApp</button>`:''}
+          ${censo?`<button onclick="compartilharWACenso('${r.key}')" style="padding:8px 14px;background:#128C7E;color:white;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.83rem;">Enviar Censo no WhatsApp</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.limparConsProd=function(){
+  const {ini,fim}=periodoUltimoMes();
+  const elIni=document.getElementById('cp-ini'); if(elIni) elIni.valueAsDate=ini;
+  const elFim=document.getElementById('cp-fim'); if(elFim) elFim.valueAsDate=fim;
+  const elTrn=document.getElementById('cp-turno'); if(elTrn) elTrn.value='';
+  renderConsProd();
+};
+
+window.compartilharWACenso = function(key) {
+  const censo = censos.find(c=>c.key===key);
+  if(!censo) return;
+  const [a,m,d]=censo.data.split('-');
+  const ds=DIAS[new Date(censo.data+'T12:00:00').getDay()];
+  let txt=`*CENSO DO PLANTÃO*\n*${d}/${m}/${a} — ${ds} · ${censo.turno}*\n\n`;
+  const svObs=censo.vermelha_obs||0;
+  const svTxt=svObs>0?`${censo.vermelha||0}+${svObs}(OBS)`:`${censo.vermelha||0}`;
+  txt+=`*Internados:* Geral ${censo.nemo||0} · Respiratória ${censo.dory||0} · Sala Verm. ${svTxt} · Isolamento: ${censo.isolamento||0} · *Total: ${censo.totalInternados||0}*\n`;
+  txt+=`*Ag. Regulação:* ${censo.regulacao||0}\n`;
+  txt+=`*Intubados:* ${censo.intubados||0} · *CPAP:* ${censo.cpap||0} · *VNI:* ${censo.vni||0}\n`;
+  if(censo.obs_medicacao) txt+=`*Obs. Geral (Medicação):* ${censo.obs_medicacao}\n`;
+  if(usuarioAtual) txt+=`\n_Registrado por: ${usuarioAtual.nome}_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+};
+
+function renderInicio(){
+ // Garante cards corretos para o perfil atual
+ if(usuarioAtual) aplicarPermissoes(usuarioAtual.perfil);
+ const hoje = new Date().toISOString().slice(0,10);
+ const plantaoHoje = plantoes.filter(r=>r.data===hoje);
+ const temDiurno = plantaoHoje.some(r=>r.turno==='DIURNO');
+ const temNoturno = plantaoHoje.some(r=>r.turno==='NOTURNO');
+ let proximoTxt = '';
+ if(!temDiurno && !temNoturno) proximoTxt = '<span style="color:var(--amarelo);font-weight:600;">Nenhum plantão registrado hoje ainda.</span>';
+ else if(!temDiurno) proximoTxt = '<span style="color:var(--verde);font-weight:600;">Diurno pendente de registro.</span>';
+ else if(!temNoturno) proximoTxt = '<span style="color:var(--verde);font-weight:600;">Noturno pendente de registro.</span>';
+ else proximoTxt = '<span style="color:var(--cinza);">Ambos os turnos registrados hoje.</span>';
+ const el_turno = document.getElementById('inicio-proximo-turno');
+ if(el_turno) el_turno.innerHTML = `<div style="margin-bottom:6px;font-size:0.8rem;color:var(--cinza);">Hoje: ${hoje.split('-').reverse().join('/')}</div>${proximoTxt}<br><button onclick="switchTab('registrar')" style="margin-top:10px;padding:6px 14px;background:var(--azul);color:white;border:none;border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">Registrar Plantão</button>`;
+ const ultimo = plantoes[0];
+ const el_ult = document.getElementById('inicio-ultimo-plantao');
+ if(el_ult){
+ if(!ultimo){ el_ult.innerHTML='<span style="color:var(--cinza);">Nenhum plantão registrado ainda.</span>'; }
+ else {
+ const [a,m,d]=ultimo.data.split('-');
+ const meds=(ultimo.equipe?.medico||[]).map(p=>abr(p.nome)).filter(Boolean).slice(0,2).join(' · ')||'—';
+ el_ult.innerHTML=`<div style="font-weight:700;font-size:1rem;color:var(--texto);margin-bottom:4px;">${d}/${m}/${a} — ${ultimo.turno}</div><div style="font-size:0.8rem;color:var(--cinza);"> ${meds}</div><button onclick="switchTab('consultar')" style="margin-top:10px;padding:6px 14px;background:var(--azul-claro);color:var(--azul);border:1.5px solid var(--azul);border-radius:7px;font-weight:600;cursor:pointer;font-size:0.82rem;">Ver todos</button>`;
+ }
+ }
+ // Card último censo
+ const el_censo = document.getElementById('inicio-ultimo-censo');
+ if(el_censo){
+ const ultimoCenso = censos.length ? censos[censos.length-1] : null;
+ if(!ultimoCenso){ el_censo.innerHTML='<span style="color:var(--cinza);">Nenhum censo registrado ainda.</span>'; }
+ else {
+ const [a,m,d]=ultimoCenso.data.split('-');
+ const turnoIcon = ultimoCenso.turno==='DIURNO'?'':'';
+ el_censo.innerHTML=`
+ <div style="font-size:0.82rem;color:var(--cinza);margin-bottom:10px;">${d}/${m}/${a} ${turnoIcon} ${ultimoCenso.turno}</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">
+ <div style="background:var(--azul-claro);border-radius:8px;padding:10px 12px;text-align:center;">
+ <div style="font-size:1.6rem;font-weight:700;color:var(--azul);">${ultimoCenso.totalInternados||0}</div>
+ <div style="font-size:0.72rem;color:var(--cinza);margin-top:2px;">Total Internados</div>
+ </div>
+ <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
+ <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Enfermarias</div>
+ <div style="font-size:0.82rem;">Geral: <b>${ultimoCenso.nemo||0}</b></div>
+ <div style="font-size:0.82rem;">Respiratória: <b>${ultimoCenso.dory||0}</b></div>
+ <div style="font-size:0.82rem;">Sala Verm.: <b>${ultimoCenso.vermelha||0}${ultimoCenso.vermelha_obs?'+'+ultimoCenso.vermelha_obs+'(OBS)':''}</b></div>
+ <div style="font-size:0.82rem;">Isolamento: <b>${ultimoCenso.isolamento||0}</b></div>
+ </div>
+ <div style="background:var(--cinza-claro);border-radius:8px;padding:10px 12px;">
+ <div style="font-size:0.72rem;color:var(--cinza);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Situação Clínica</div>
+ <div style="font-size:0.82rem;">Regulação: <b>${ultimoCenso.regulacao||0}</b></div>
+ <div style="font-size:0.82rem;">Intubados: <b>${ultimoCenso.intubados||0}</b></div>
+ <div style="font-size:0.82rem;">CPAP: <b>${ultimoCenso.cpap||0}</b> · VNI: <b>${ultimoCenso.vni||0}</b></div>
+ ${ultimoCenso.obs_medicacao?`<div style="font-size:0.82rem;">Obs. Medicação: <b>${ultimoCenso.obs_medicacao}</b></div>`:''}
+ </div>
+ </div>`;
+ }
+ }
+}
+
+// ===== PDFs =====
+function gerarPDF(titulo, conteudoHTML) {
+ const janela = window.open('','_blank');
+ janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+ <title>${titulo}</title>
+ <style>
+ * { box-sizing:border-box; margin:0; padding:0; }
+ body { font-family:'Segoe UI',system-ui,sans-serif; color:#1E293B; padding:24px; font-size:12px; }
+ h1 { font-size:16px; color:#1B6CA8; margin-bottom:4px; }
+ .sub { font-size:11px; color:#64748B; margin-bottom:20px; }
+ table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+ th { background:#1B6CA8; color:white; padding:7px 10px; text-align:left; font-size:11px; }
+ td { padding:6px 10px; border-bottom:1px solid #CBD5E1; font-size:11px; }
+ tr:nth-child(even) td { background:#F0F4F8; }
+ .secao { font-size:11px; font-weight:700; color:#1B6CA8; text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px; }
+ .kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+ .kpi { background:#E8F1FA; border-radius:6px; padding:8px 10px; }
+ .kpi-val { font-size:20px; font-weight:700; color:#1B6CA8; }
+ .kpi-label { font-size:10px; color:#64748B; }
+ footer { margin-top:24px; padding-top:10px; border-top:1px solid #CBD5E1; display:flex; justify-content:space-between; font-size:10px; color:#94A3B8; }
+ @media print { body { padding:12px; } }
+ </style></head><body>
+ <h1>UPED · Sistema de Plantão</h1>
+ <div class="sub">${titulo} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+ ${conteudoHTML}
+ <footer>
+ <span>Developed by Datum Studio</span>
+ <span>UPED · Sistema de Plantão © ${new Date().getFullYear()}</span>
+ </footer>
+ <script>window.onload=()=>{ window.print(); }<\/script>
+ </body></html>`);
+ janela.document.close();
+}
+
+window.exportarPDFDashboard=function(){
+ const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value;
+ const trn=document.getElementById('db-turno').value;
+ const dados=producoes.filter(r=>{
+ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false;
+ if(trn&&r.turno!==trn)return false; return true;
+ }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ if(!dados.length){ toast(' Nenhum dado no período.','#E53E3E'); return; }
+ const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+ const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+ const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+ const pGrav=s('total')?Math.round(s('vermelha')/s('total')*100):0;
+ const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
+ const html=`
+ <div class="secao">Período: ${per}${trn?' · '+trn:''}</div>
+ <div class="kpi-grid">
+ <div class="kpi"><div class="kpi-val">${dados.length}</div><div class="kpi-label">Plantões (${diu.length}D / ${not.length}N)</div></div>
+ <div class="kpi"><div class="kpi-val">${s('total')}</div><div class="kpi-label">Total de Atendimentos</div></div>
+ <div class="kpi"><div class="kpi-val">${dados.length?Math.round(s('total')/dados.length):0}</div><div class="kpi-label">Média por Plantão</div></div>
+ <div class="kpi"><div class="kpi-val">${pGrav}%</div><div class="kpi-label">Gravidade Alta (+)</div></div>
+ <div class="kpi"><div class="kpi-val">${s('internamento')}</div><div class="kpi-label">Internamentos</div></div>
+ <div class="kpi"><div class="kpi-val">${s('transferencia')}</div><div class="kpi-label">Transferências</div></div>
+ <div class="kpi"><div class="kpi-val">${s('obito')}</div><div class="kpi-label">Óbitos</div></div>
+ <div class="kpi"><div class="kpi-val">${s('gripais')}</div><div class="kpi-label">Sint. Gripais</div></div>
+ </div>
+ <div class="secao">Distribuição por tipo de ficha</div>
+ <table><thead><tr><th>Ficha</th><th>Quantidade</th><th>% do total</th></tr></thead>
+ <tbody>
+ ${[[' Azul','azul'],[' Verde','verde'],[' Amarela','amarela'],[' Vermelha','vermelha']].map(([l,c])=>`<tr><td>${l}</td><td>${s(c)}</td><td>${s('total')?Math.round(s(c)/s('total')*100):0}%</td></tr>`).join('')}
+ </tbody></table>`;
+ gerarPDF('Dashboard Gerencial — UPED',html);
+};
+
+window.exportarPDFProd=function(){
+ const ini=document.getElementById('rp-ini').value; const fim=document.getElementById('rp-fim').value;
+ const trn=document.getElementById('rp-turno').value;
+ const dados=producoes.filter(r=>{
+ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false;
+ if(trn&&r.turno!==trn)return false; return true;
+ }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ if(!dados.length){ toast(' Nenhum dado no período.','#E53E3E'); return; }
+ const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+ const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+ const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+ const html=`
+ <div class="secao">Período: ${per}${trn?' · '+trn:''} · ${dados.length} plantões · Total: ${s('total')} atendimentos</div>
+ <table><thead><tr>
+ <th>Data</th><th>Turno</th><th>Azul</th><th>Verde</th><th>Amarela</th><th>Vermelha</th><th>Total</th><th>Intern.</th><th>Transf.</th><th>Óbito</th><th>Gripais</th><th>Sutura</th>
+ </tr></thead>
+ <tbody>
+ ${dados.map(r=>`<tr>
+ <td>${fmtP(r.data)}</td><td>${r.turno==='DIURNO'?'D':'N'}</td>
+ <td>${r.azul||0}</td><td>${r.verde||0}</td><td>${r.amarela||0}</td><td>${r.vermelha||0}</td>
+ <td><b>${r.total||0}</b></td><td>${r.internamento||0}</td><td>${r.transferencia||0}</td><td>${r.obito||0}</td><td>${r.gripais||0}</td><td>${r.sutura||0}</td>
+ </tr>`).join('')}
+ <tr style="font-weight:700;background:#E8F1FA">
+ <td colspan="2">TOTAL</td>
+ <td>${s('azul')}</td><td>${s('verde')}</td><td>${s('amarela')}</td><td>${s('vermelha')}</td>
+ <td>${s('total')}</td><td>${s('internamento')}</td><td>${s('transferencia')}</td><td>${s('obito')}</td><td>${s('gripais')}</td><td>${s('sutura')}</td>
+ </tr>
+ </tbody></table>`;
+ gerarPDF('Histórico de Produção — UPED',html);
+};
+
+window.exportarPDFProfissionais = function() {
+ const ativos = CATS_CADASTRO.map(cat => ({
+ cat,
+ profs: profissionais.filter(p => p.catId === cat.id && p.ativo !== false)
+ })).filter(g => g.profs.length> 0);
+
+ if(!ativos.length){ toast(' Nenhum profissional ativo cadastrado.','#E53E3E'); return; }
+
+ const total = ativos.reduce((s,g)=>s+g.profs.length, 0);
+ const rows = ativos.map(g=>`
+ <tr style="background:#E8F1FA;">
+ <td colspan="2" style="font-weight:700;color:#1B6CA8;padding:8px 10px;">${g.cat.icon} ${g.cat.label} <span style="font-weight:400;color:#64748B;">(${g.profs.length})</span></td>
+ </tr>
+ ${g.profs.map((p,i)=>`<tr><td style="padding-left:20px;">${i+1}. ${p.nome}</td><td style="color:#22C55E;font-weight:600;">Ativo</td></tr>`).join('')}
+ `).join('');
+
+ const html = `
+ <div class="secao">Profissionais Ativos — UPED · Unidade de Atendimento Pediátrico</div>
+ <div style="margin-bottom:16px;font-size:11px;color:#64748B;">Total: <strong>${total} profissionais ativos</strong> em ${ativos.length} categorias · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+ <table>
+ <tbody>${ativos.map(g=>`
+ <tr style="background:#E8F1FA;">
+ <td colspan="2" style="font-weight:700;color:#1B6CA8;padding:8px 10px;">${g.cat.label} (${g.profs.length})</td>
+ </tr>
+ ${g.profs.map((p,i)=>`<tr><td style="padding-left:20px;">${i+1}. ${p.nome}</td></tr>`).join('')}
+ `).join('')}</tbody>
+ </table>`;
+ gerarPDF('Relatório de Profissionais Ativos', html);
+};
+
+window.exportarPDFCenso=function(){
+ const ini=document.getElementById('rc-ini').value; const fim=document.getElementById('rc-fim').value;
+ const dados=censos.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; });
+ if(!dados.length){ toast(' Nenhum censo no período.','#E53E3E'); return; }
+ const fmtP=d=>{ const[a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; };
+ const per=ini&&fim?`${fmtP(ini)} a ${fmtP(fim)}`:'Todos os períodos';
+ const html=`
+ <div class="secao">Período: ${per}</div>
+ <table><thead><tr><th>Data</th><th>Turno</th><th>Geral</th><th>Resp.</th><th>S.Verm.</th><th>S.Verm.(OBS)</th><th>Isolamento</th><th>Total Int.</th><th>Regulação</th><th>Intubados</th><th>CPAP</th><th>VNI</th><th>Obs.Med.</th></tr></thead>
+ <tbody>${[...dados].reverse().map(r=>`<tr><td>${fmtP(r.data)}</td><td>${r.turno}</td><td>${r.nemo||0}</td><td>${r.dory||0}</td><td>${r.vermelha||0}</td><td>${r.vermelha_obs||0}</td><td>${r.isolamento||0}</td><td><b>${r.totalInternados||0}</b></td><td>${r.regulacao||0}</td><td>${r.intubados||0}</td><td>${r.cpap||0}</td><td>${r.vni||0}</td><td>${r.obs_medicacao||0}</td></tr>`).join('')}</tbody></table>`;
+ gerarPDF('Compilado de Censo do Plantão',html);
+};
+
+// ===== PRODUÇÃO =====
+onSnapshot(query(collection(db,'producao'),orderBy('data','desc')),snap=>{
+ producoes=snap.docs.map(d=>({...d.data(),key:d.id}));
+ const panelProd=document.getElementById('panel-producao');
+ if(panelProd?.classList.contains('active')) verificarBloqueio();
+ const gsecHist=document.getElementById('gsec-hist');
+ if(gsecHist && gsecHist.style.display!=='none') filtrarProducao();
+ if(document.getElementById('panel-consprod')?.classList.contains('active')) renderConsProd();
+});
+
+CAMPOS_FICHAS.forEach(c=>{
+ const el=document.getElementById('p-'+c);
+ if(el) el.addEventListener('input',calcTotal);
+});
+function calcTotal(){
+ document.getElementById('p-total').textContent=CAMPOS_FICHAS.reduce((s,c)=>s+(parseInt(document.getElementById('p-'+c).value)||0),0);
+}
+
+function chaveProd(){ const d=document.getElementById('fp-data').value; const t=document.getElementById('fp-turno').value; return d&&t?d+'_'+t:null; }
+
+async function verificarBloqueio(){
+ const chave=chaveProd(); if(!chave) return;
+ const snap=await getDoc(doc(db,'producao',chave));
+ const aviso=document.getElementById('prod-aviso');
+ const campos=document.querySelectorAll('#prod-campos input,#prod-campos-comp input');
+ const btn=document.getElementById('btn-salvar-prod');
+ if(snap.exists()){
+ const d=snap.data(); prodBloqueado=true;
+ aviso.style.display='flex';
+ document.getElementById('prod-aviso-txt').textContent=`Registrado em ${new Date(d.registradoEm).toLocaleString('pt-BR')}${d.editadoEm?' · editado em '+new Date(d.editadoEm).toLocaleString('pt-BR'):''}.`;
+ campos.forEach(el=>el.disabled=true); btn.disabled=true;
+ CAMPOS_PROD.forEach(c=>{ const el=document.getElementById('p-'+c); if(el) el.value=d[c]||0; }); calcTotal();
+ } else {
+ prodBloqueado=false; aviso.style.display='none';
+ campos.forEach(el=>el.disabled=false); btn.disabled=false;
+ btn.textContent=' Registrar Produção';
+ CAMPOS_PROD.forEach(c=>{ const el=document.getElementById('p-'+c); if(el) el.value=0; }); calcTotal();
+ }
+}
+document.getElementById('fp-data').addEventListener('change', verificarBloqueio);
+document.getElementById('fp-turno').addEventListener('change', verificarBloqueio);
+
+window.editarProducao=()=>{
+ abrirSenha(' Editar Produção','Informe a senha de supervisor para editar este registro.',()=>{
+ const campos=document.querySelectorAll('#prod-campos input,#prod-campos-comp input');
+ campos.forEach(el=>el.disabled=false);
+ document.getElementById('btn-salvar-prod').disabled=false;
+ document.getElementById('btn-salvar-prod').textContent=' Salvar Edição';
+ document.getElementById('prod-aviso-txt').textContent=' Modo edição — salve ao concluir.';
+ toast(' Edição liberada.','#F59E0B');
+ });
+};
+
+async function salvarProducao(){
+ const chave=chaveProd(); if(!chave){ toast(' Selecione data e turno!','#E53E3E'); return; }
+ const dados={key:chave,data:document.getElementById('fp-data').value,turno:document.getElementById('fp-turno').value};
+ CAMPOS_PROD.forEach(c=>{ dados[c]=parseInt(document.getElementById('p-'+c).value)||0; });
+ dados.total=CAMPOS_FICHAS.reduce((s,c)=>s+dados[c],0);
+ if(prodBloqueado) dados.editadoEm=new Date().toISOString();
+ else dados.registradoEm=new Date().toISOString();
+ const btn=document.getElementById('btn-salvar-prod'); btn.disabled=true; btn.textContent='Salvando...';
+ try{
+ await setDoc(doc(db,'producao',chave),dados);
+ btn.disabled=false; btn.textContent=' Registrar Produção';
+ abrirModalConfirmacaoProd(dados);
+ // Avança turno
+ const dt=document.getElementById('fp-data').value; const tr=document.getElementById('fp-turno').value;
+ if(tr==='NOTURNO'){ const d=new Date(dt+'T12:00:00'); d.setDate(d.getDate()+1); document.getElementById('fp-data').value=d.toISOString().slice(0,10); document.getElementById('fp-turno').value='DIURNO'; }
+ else { document.getElementById('fp-turno').value='NOTURNO'; }
+ await verificarBloqueio();
+ } catch(e){ toast(' '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent=' Registrar Produção'; }
+}
+window.salvarProducao=salvarProducao;
+
+function abrirModalConfirmacaoProd(d) {
+ const [a,m,dd]=d.data.split('-');
+ const ds=DIAS[new Date(d.data+'T12:00:00').getDay()];
+ document.getElementById('modal-prod-resumo').innerHTML=`
+ <div style="font-size:0.9rem;font-weight:700;margin-bottom:10px;color:var(--azul)">${dd}/${m}/${a} — ${ds} · ${d.turno}</div>
+ <div style="font-size:0.85rem;margin-bottom:4px;">Azul: <b>${d.azul||0}</b> · Verde: <b>${d.verde||0}</b> · Amarela: <b>${d.amarela||0}</b> · Vermelha: <b>${d.vermelha||0}</b></div>
+ <div style="font-size:0.9rem;font-weight:700;color:var(--azul);margin-top:8px;">Total: ${d.total||0} atendimentos</div>`;
+ document.getElementById('modal-prod-wa').onclick=()=>{ window.compartilharWAProd(d); };
+ document.getElementById('modal-prod-confirmacao').classList.remove('hidden');
+}
+window.fecharModalProd=function(){ document.getElementById('modal-prod-confirmacao').classList.add('hidden'); };
+
+window.compartilharWAProd = function(d) {
+ if(!d) d=window._ultimaProd; if(!d) return;
+ const [a,m,dd]=d.data.split('-');
+ const ds=DIAS[new Date(d.data+'T12:00:00').getDay()];
+ let txt=`*PRODUÇÃO DO PLANTÃO*\n*${dd}/${m}/${a} — ${ds} · ${d.turno}*\n\n`;
+ txt+=`*Total de atendimentos: ${d.total||0}*\n\n`;
+ txt+=`*Fichas:*\nAzul: ${d.azul||0} Verde: ${d.verde||0} Amarela: ${d.amarela||0} Vermelha: ${d.vermelha||0}\n\n`;
+ txt+=`*Complementares:*\n`;
+ txt+=`Sint. Gripais: ${d.gripais||0} · Sutura: ${d.sutura||0}\n`;
+ txt+=`Internamento: ${d.internamento||0} · Alta: ${d.alta||0} · Evasão: ${d.evasao||0}\n`;
+ txt+=`Transferência: ${d.transferencia||0} · Óbito: ${d.obito||0}\n`;
+ txt+=`Raio-X: ${d.raiox||0} · Laboratório: ${d.laboratorio||0}\n`;
+ if(usuarioAtual) txt+=`\n_Registrado por: ${usuarioAtual.nome}_`;
+ window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+};
+
+function getProdFiltradas(){
+ const ini=document.getElementById('rp-ini').value; const fim=document.getElementById('rp-fim').value; const trn=document.getElementById('rp-turno').value;
+ return producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+}
+function filtrarProducao(){ const l=getProdFiltradas(); renderResumoProd(l); renderGraficoProd(l); renderHistProd(l); }
+window.filtrarProducao=filtrarProducao;
+function limparProd_placeholder(){} // substituída abaixo
+
+function renderResumoProd(l){
+ const el=document.getElementById('resumo-prod'); if(!l.length){ el.innerHTML=''; return; }
+ const s=c=>l.reduce((a,r)=>a+(r[c]||0),0);
+ const med=Math.round(s('total')/l.length);
+ el.innerHTML=`
+ <div class="resumo-card"><div class="rc-label">Plantões</div><div class="rc-val">${l.length}</div><div class="rc-sub">registrados</div></div>
+ <div class="resumo-card"><div class="rc-label">Atendimentos</div><div class="rc-val">${s('total')}</div><div class="rc-sub">média ${med}/plantão</div></div>
+ <div class="resumo-card"><div class="rc-label">Internamentos</div><div class="rc-val">${s('internamento')}</div><div class="rc-sub">no período</div></div>
+ <div class="resumo-card"><div class="rc-label">Transferências</div><div class="rc-val">${s('transferencia')}</div><div class="rc-sub">no período</div></div>
+ <div class="resumo-card"><div class="rc-label">Óbitos</div><div class="rc-val" style="color:${s('obito')>0?'var(--vermelho)':'var(--azul)'}">${s('obito')}</div><div class="rc-sub">no período</div></div>`;
+}
+function renderGraficoProd(l){
+ const wrap=document.getElementById('chart-wrap-prod');
+ if(l.length<2){ wrap.style.display='none'; if(chartProd){chartProd.destroy();chartProd=null;} return; }
+ wrap.style.display='block';
+ if(chartProd){chartProd.destroy();chartProd=null;}
+ const labels=l.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'D':'N'}`;});
+ chartProd=new Chart(document.getElementById('chart-prod'),{type:'bar',data:{labels,datasets:[{label:'Atendimentos',data:l.map(r=>r.total||0),backgroundColor:'#3D8BCD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+}
+function renderHistProd(l){
+ const el=document.getElementById('lista-prod');
+ if(!l.length){ el.innerHTML='<div class="empty"><div class="big"></div><div>Nenhuma produção registrada.</div></div>'; return; }
+ el.innerHTML=[...l].reverse().map(r=>{
+ const[a,m,d]=r.data.split('-');
+ const itens=CAMPOS_PROD.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_PROD[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+ return `<div class="prod-hist-card">
+ <div class="prod-hist-header" onclick="toggleProdCard(this)">
+ <span>${d}/${m}/${a}</span>
+ <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'':''} ${r.turno}</span>
+ ${r.editadoEm?'<span class="editado-badge">editado</span>':''}
+ <span style="margin-left:auto;font-size:0.78rem;background:var(--azul);color:white;padding:2px 9px;border-radius:20px;font-weight:700;">${r.total||0} atend.</span>
+ <span class="chevron"></span>
+ </div>
+ <div class="prod-hist-body">
+ <div class="prod-num-grid">${itens}</div>
+ <div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--cinza-borda);">
+ <button onclick="excluirProducao('${r.key}','${d}/${m}/${a}','${r.turno}')" style="padding:5px 12px;background:white;color:var(--cinza);border:1.5px solid var(--cinza-borda);border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#FEE2E2';this.style.color='var(--vermelho)';this.style.borderColor='#FECACA'" onmouseout="this.style.background='white';this.style.color='var(--cinza)';this.style.borderColor='var(--cinza-borda)'">Excluir registro</button>
+ </div>
+ </div>
+ </div>`;
+ }).join('');
+}
+window.excluirProducao=function(key, dataFmt, turno){
+ if(!confirm(`Excluir produção de ${dataFmt} — ${turno}?\nEsta ação não pode ser desfeita.`)) return;
+ deleteDoc(doc(db,'producao',key))
+ .then(async()=>{
+ toast(' Registro de produção excluído.');
+ if(chaveProd()===key) await verificarBloqueio();
+ })
+ .catch(e=>toast(' '+e.message,'#E53E3E'));
+};
+window.toggleProdCard=function(h){ const b=h.nextElementSibling; b.classList.toggle('open'); h.querySelector('.chevron').classList.toggle('open',b.classList.contains('open')); };
+
+window.exportarProdCSV=function(){
+ const l=getProdFiltradas(); if(!l.length){ toast(' Nenhum dado.','#E53E3E'); return; }
+ const cab=['Data','Turno',...CAMPOS_PROD.map(c=>LABELS_PROD[c].replace(/[^\w\s]/g,'').trim()),'Total'].join(';');
+ const linhas=l.map(r=>{ const[a,m,d]=r.data.split('-'); return [`${d}/${m}/${a}`,r.turno,...CAMPOS_PROD.map(c=>r[c]||0),r.total||0].join(';'); });
+ const csv='\uFEFF'+[cab,...linhas].join('\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`producao_uped_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+ toast(' CSV exportado!');
+};
+window.exportarProdCSV=window.exportarProdCSV;
+
+// ===== DASHBOARD =====
+window.renderDashboard=function(){
+ const ini=document.getElementById('db-ini').value; const fim=document.getElementById('db-fim').value; const trn=document.getElementById('db-turno').value;
+ const dados=producoes.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; if(trn&&r.turno!==trn)return false; return true; }).sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ const el=document.getElementById('dash-conteudo');
+ if(!dados.length){ el.innerHTML='<div class="dash-vazio"><div class="big"></div><div>Nenhum dado no período.</div></div>'; return; }
+ const s=c=>dados.reduce((a,r)=>a+(r[c]||0),0);
+ const total=s('total'); const n=dados.length; const med=Math.round(total/n);
+ const verm=s('vermelha'); const amr=s('amarela'); const verd=s('verde'); const azul=s('azul');
+ const pGrav=total?Math.round(verm/total*100):0; const pMod=total?Math.round(amr/total*100):0; const pBaixa=100-pGrav-pMod;
+ const diu=dados.filter(r=>r.turno==='DIURNO'); const not=dados.filter(r=>r.turno==='NOTURNO');
+ const st=(l,c)=>l.reduce((a,r)=>a+(r[c]||0),0);
+ el.innerHTML=`
+ <div class="kpi-grid">
+ <div class="kpi-card"><div class="kpi-label">Plantões</div><div class="kpi-valor">${n}</div><div class="kpi-sub">${diu.length} diurno · ${not.length} noturno</div></div>
+ <div class="kpi-card"><div class="kpi-label">Atendimentos</div><div class="kpi-valor">${total}</div><div class="kpi-sub">média ${med}/plantão</div></div>
+ <div class="kpi-card"><div class="kpi-label">Gravidade alta</div><div class="kpi-valor ${pGrav>=15?'verm':pGrav>=8?'amar':'verd'}">${pGrav}%</div><div class="kpi-sub"> ${verm} vermelhas</div></div>
+ <div class="kpi-card"><div class="kpi-label">Internamentos</div><div class="kpi-valor">${s('internamento')}</div><div class="kpi-sub">${total?((s('internamento')/total)*100).toFixed(1):0}% dos atend.</div></div>
+ <div class="kpi-card"><div class="kpi-label">Transferências</div><div class="kpi-valor">${s('transferencia')}</div><div class="kpi-sub">no período</div></div>
+ <div class="kpi-card"><div class="kpi-label">Óbitos</div><div class="kpi-valor ${s('obito')>0?'verm':''}">${s('obito')}</div><div class="kpi-sub">no período</div></div>
+ </div>
+ <div class="dash-row">
+ <div class="dash-card full">
+ <div class="dash-titulo">Evolução de atendimentos</div>
+ <div style="position:relative;width:100%;height:200px;"><canvas id="ch-ev"></canvas></div>
+ </div>
+ </div>
+ <div class="dash-row">
+ <div class="dash-card">
+ <div class="dash-titulo">Distribuição por ficha</div>
+ <div style="position:relative;width:100%;height:190px;"><canvas id="ch-fichas"></canvas></div>
+ </div>
+ <div class="dash-card">
+ <div class="dash-titulo">Diurno × Noturno</div>
+ <div class="turno-comp">
+ <div class="turno-bloco"><div class="turno-titulo">Diurno (${diu.length})</div>
+ ${[['Total',st(diu,'total')],['Média',diu.length?Math.round(st(diu,'total')/diu.length):0],['Internamentos',st(diu,'internamento')],['Transferências',st(diu,'transferencia')],['Sint. Gripais',st(diu,'gripais')]].map(([l,v])=>`<div class="turno-linha"><span>${l}</span><span class="val">${v}</span></div>`).join('')}
+ </div>
+ <div class="turno-bloco"><div class="turno-titulo">Noturno (${not.length})</div>
+ ${[['Total',st(not,'total')],['Média',not.length?Math.round(st(not,'total')/not.length):0],['Internamentos',st(not,'internamento')],['Transferências',st(not,'transferencia')],['Sint. Gripais',st(not,'gripais')]].map(([l,v])=>`<div class="turno-linha"><span>${l}</span><span class="val">${v}</span></div>`).join('')}
+ </div>
+ </div>
+ <div style="margin-top:14px;">
+ <div class="dash-titulo" style="margin-bottom:6px;">Perfil de gravidade</div>
+ <div class="grav-barra"><div style="width:${pBaixa}%;background:#22C55E;"></div><div style="width:${pMod}%;background:#F59E0B;"></div><div style="width:${pGrav}%;background:#EF4444;"></div></div>
+ <div class="grav-legend">
+ <div class="grav-item"><div class="grav-dot" style="background:#22C55E;"></div>Baixa ${pBaixa}%</div>
+ <div class="grav-item"><div class="grav-dot" style="background:#F59E0B;"></div>Moderada ${pMod}%</div>
+ <div class="grav-item"><div class="grav-dot" style="background:#EF4444;"></div>Alta ${pGrav}%</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="dash-card" style="margin-bottom:14px;">
+ <div class="dash-titulo">Informações complementares</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px;">
+ ${[[' Sint. Gripais',s('gripais')],[' Sutura',s('sutura')],[' Internamento',s('internamento')],[' Alta',s('alta')],[' Evasão',s('evasao')],[' Transferência',s('transferencia')],[' Óbito',s('obito')]].map(([l,v])=>`<div style="background:var(--cinza-claro);border-radius:8px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.78rem;color:var(--cinza);">${l}</span><span style="font-size:1rem;font-weight:700;">${v}</span></div>`).join('')}
+ </div>
+ </div>`;
+ if(chartEv){chartEv.destroy();chartEv=null;} if(chartFichas){chartFichas.destroy();chartFichas=null;}
+ chartEv=new Chart(document.getElementById('ch-ev'),{type:'line',data:{labels:dados.map(r=>{const[,m,d]=r.data.split('-');return `${d}/${m} ${r.turno==='DIURNO'?'D':'N'}`;}),datasets:[{label:'Atendimentos',data:dados.map(r=>r.total||0),borderColor:'#1B6CA8',backgroundColor:'rgba(27,108,168,0.1)',tension:0.3,fill:true,pointRadius:3},{label:'Internamentos',data:dados.map(r=>r.internamento||0),borderColor:'#2E7D57',borderDash:[5,3],tension:0.3,pointRadius:2,backgroundColor:'rgba(0,0,0,0)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:20,font:{size:11}}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10},maxRotation:45}}}}});
+ chartFichas=new Chart(document.getElementById('ch-fichas'),{type:'bar',data:{labels:[' Azul',' Verde',' Amarela',' Vermelha'],datasets:[{data:[azul,verd,amr,verm],backgroundColor:['#3B82F6','#22C55E','#EAB308','#EF4444'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
+};
+window.limparDashboard=function(){
+ const {ini,fim}=periodoUltimoMes();
+ document.getElementById('db-ini').valueAsDate=ini;
+ document.getElementById('db-fim').valueAsDate=fim;
+ document.getElementById('db-turno').value=''; renderDashboard();
+};
+function limparProd(){
+ const {ini,fim}=periodoUltimoMes();
+ document.getElementById('rp-ini').valueAsDate=ini;
+ document.getElementById('rp-fim').valueAsDate=fim;
+ document.getElementById('rp-turno').value=''; filtrarProducao();
+}
+window.limparProd=limparProd;
+
+// ===== CENSO DO PLANTÃO =====
+const CAMPOS_CENSO_INT = ['nemo','dory','vermelha','vermelha_obs','isolamento'];
+const CAMPOS_CENSO_CLIN = ['regulacao','intubados','cpap','vni','obs_medicacao'];
+const CAMPOS_CENSO = [...CAMPOS_CENSO_INT,...CAMPOS_CENSO_CLIN];
+const LABELS_CENSO = {
+ nemo:'Geral', dory:'Respiratória',
+ vermelha:'Sala Vermelha', vermelha_obs:'Sala Verm. (OBS)',
+ isolamento:'Isolamento',
+ regulacao:'Ag. Regulação', intubados:'Intubados',
+ cpap:'CPAP', vni:'VNI', obs_medicacao:'Obs. Geral (Medicação)'
+};
+
+let censos = [];
+
+onSnapshot(collection(db,'censo'), snap=>{
+ censos = snap.docs.map(d=>({...d.data(),key:d.id}))
+ .sort((a,b)=>a.data.localeCompare(b.data)||(a.turno==='DIURNO'?-1:1));
+ if(document.getElementById('panel-inicio')?.classList.contains('active')) renderInicio();
+ if(document.getElementById('gsec-censo')?.style.display!=='none') {
+ verificarBloqueoCenso();
+ filtrarCenso();
+ }
+});
+
+CAMPOS_CENSO_INT.forEach(c=>{
+ const id = 'cs-'+c.replace('_','-');
+ const el=document.getElementById(id);
+ if(el) el.addEventListener('input', calcTotalInternados);
+});
+function calcTotalInternados(){
+ document.getElementById('cs-total-internados').textContent =
+ CAMPOS_CENSO_INT.reduce((s,c)=>s+(parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0),0);
+}
+
+function chaveCenso(){
+ // O censo usa a mesma data/turno do formulário de Registrar Plantão
+ const d=document.getElementById('f-data').value;
+ const t=document.getElementById('f-turno').value;
+ return d&&t?d+'_'+t:null;
+}
+
+async function verificarBloqueoCenso(){
+ const chave=chaveCenso(); if(!chave) return;
+ const snap=await getDoc(doc(db,'censo',chave));
+ const aviso=document.getElementById('censo-aviso');
+ const campos=document.querySelectorAll('#censo-campos-internados input,#censo-campos-clinica input');
+ const btn=document.getElementById('btn-salvar-censo');
+ if(!aviso) return; // não está no formulário de registrar, ignora
+ if(snap.exists()){
+ const d=snap.data();
+ CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c.replace('_','-')); if(el) el.value=d[c]||0; });
+ calcTotalInternados();
+ if(isAdmin()){
+ aviso.style.display='none';
+ campos.forEach(el=>el.disabled=false);
+ if(btn){ btn.disabled=false; btn.textContent=' Atualizar Censo'; }
+ } else {
+ aviso.style.display='flex';
+ const txt=document.getElementById('censo-aviso-txt');
+ if(txt) txt.textContent=`Censo registrado em ${new Date(d.registradoEm).toLocaleString('pt-BR')}${d.editadoEm?' · editado':''}.`;
+ campos.forEach(el=>el.disabled=true);
+ if(btn) btn.disabled=true;
+ }
+ } else {
+ aviso.style.display='none';
+ campos.forEach(el=>el.disabled=false);
+ if(btn){ btn.disabled=false; btn.textContent=' Registrar Censo'; }
+ CAMPOS_CENSO.forEach(c=>{ const el=document.getElementById('cs-'+c.replace('_','-')); if(el) el.value=0; });
+ calcTotalInternados();
+ }
+}
+
+window.editarCenso=()=>{
+ // Só recepção precisa do botão editar — admin já tem acesso direto
+ if(isAdmin()) return;
+ abrirSenha(' Editar Censo','',()=>{
+ const campos=document.querySelectorAll('#censo-campos-internados input,#censo-campos-clinica input');
+ campos.forEach(el=>el.disabled=false);
+ document.getElementById('btn-salvar-censo').disabled=false;
+ document.getElementById('btn-salvar-censo').textContent=' Salvar Edição';
+ document.getElementById('censo-aviso-txt').textContent=' Modo edição — salve ao concluir.';
+ });
+};
+
+window.salvarCenso=async function(){
+ const chave=chaveCenso(); if(!chave){ toast(' Selecione data e turno no formulário acima.','#E53E3E'); return; }
+ const dados={
+ key:chave,
+ data:document.getElementById('f-data').value,
+ turno:document.getElementById('f-turno').value
+ };
+ CAMPOS_CENSO.forEach(c=>{ dados[c]=parseInt(document.getElementById('cs-'+c.replace('_','-')).value)||0; });
+ dados.totalInternados=CAMPOS_CENSO_INT.reduce((s,c)=>s+dados[c],0);
+ const jaExiste=(await getDoc(doc(db,'censo',chave))).exists();
+ if(jaExiste) dados.editadoEm=new Date().toISOString();
+ else dados.registradoEm=new Date().toISOString();
+ const btn=document.getElementById('btn-salvar-censo'); btn.disabled=true; btn.textContent='Salvando...';
+ try{
+ await setDoc(doc(db,'censo',chave),dados);
+ toast(' Censo registrado!');
+ await verificarBloqueoCenso();
+ } catch(e){ toast(' '+e.message,'#E53E3E'); btn.disabled=false; btn.textContent=' Registrar Censo'; }
+};
+
+function getCensoFiltrados(){
+ const ini=document.getElementById('rc-ini').value; const fim=document.getElementById('rc-fim').value;
+ return censos.filter(r=>{ if(ini&&r.data<ini)return false; if(fim&&r.data>fim)return false; return true; });
+}
+window.filtrarCenso=function(){ renderHistCenso(getCensoFiltrados()); };
+window.limparCenso=function(){
+ const {ini,fim}=periodoUltimoMes();
+ document.getElementById('rc-ini').valueAsDate=ini;
+ document.getElementById('rc-fim').valueAsDate=fim;
+ filtrarCenso();
+};
+
+function renderHistCenso(l){
+ const el=document.getElementById('lista-censo');
+ if(!l.length){ el.innerHTML='<div class="empty"><div class="big"></div><div>Nenhum censo registrado ainda.</div></div>'; return; }
+ el.innerHTML=[...l].reverse().map(r=>{
+ const[a,m,d]=r.data.split('-');
+ const itensInt=CAMPOS_CENSO_INT.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_CENSO[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+ const itensClin=CAMPOS_CENSO_CLIN.map(c=>`<div class="prod-num-item"><span class="pni-label">${LABELS_CENSO[c]}</span><span class="pni-val">${r[c]||0}</span></div>`).join('');
+ return `<div class="prod-hist-card">
+ <div class="prod-hist-header" onclick="toggleProdCard(this)">
+ <span>${d}/${m}/${a}</span>
+ <span class="turno-badge ${r.turno==='DIURNO'?'badge-dia':'badge-not'}">${r.turno==='DIURNO'?'':''} ${r.turno}</span>
+ ${r.editadoEm?'<span class="editado-badge">editado</span>':''}
+ <span style="margin-left:auto;font-size:0.78rem;background:var(--azul);color:white;padding:2px 9px;border-radius:20px;font-weight:700;">${r.totalInternados||0} internados</span>
+ <span class="chevron"></span>
+ </div>
+ <div class="prod-hist-body">
+ <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;margin-bottom:6px;">Internados</div>
+ <div class="prod-num-grid">${itensInt}</div>
+ <div style="font-size:0.72rem;font-weight:700;color:var(--azul);text-transform:uppercase;margin:10px 0 6px;">Situação Clínica</div>
+ <div class="prod-num-grid">${itensClin}</div>
+ ${window._isAdmin?`<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--cinza-borda);">
+ <button onclick="excluirCenso('${r.key}','${d}/${m}/${a}','${r.turno}')" style="padding:5px 12px;background:white;color:var(--cinza);border:1.5px solid var(--cinza-borda);border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#FEE2E2';this.style.color='var(--vermelho)';this.style.borderColor='#FECACA'" onmouseout="this.style.background='white';this.style.color='var(--cinza)';this.style.borderColor='var(--cinza-borda)'">Excluir censo</button>
+ </div>`:''}
+ </div>
+ </div>`;
+ }).join('');
+}
+
+window.excluirCenso=function(key, dataFmt, turno){
+ if(!confirm(`Excluir censo de ${dataFmt} — ${turno}? Esta ação não pode ser desfeita.`)) return;
+ deleteDoc(doc(db,'censo',key))
+ .then(()=>{ toast(' Censo excluído.'); verificarBloqueoCenso(); })
+ .catch(e=>toast(' '+e.message,'#E53E3E'));
+};
+
+// ===== INIT =====
+if ('serviceWorker' in navigator) {
+ navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+document.getElementById('footer-ano').textContent=new Date().getFullYear();
+
+function periodoUltimoMes() {
+ const fim=new Date(); const ini=new Date(); ini.setDate(ini.getDate()-30);
+ return {ini,fim};
+}
+function aplicarPeriodoPadrao() {
+ const {ini,fim}=periodoUltimoMes();
+ ['db-ini','rp-ini','rc-ini'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=ini; });
+ ['db-fim','rp-fim','rc-fim'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.valueAsDate=fim; });
+}
+// A inicialização do sistema acontece em inicializarSistema()
+// chamada pelo onAuthStateChanged após login confirmado
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</body>
+</html>
