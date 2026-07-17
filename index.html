@@ -1887,7 +1887,9 @@ function renderInicio(){
  // Card último censo
  const el_censo = document.getElementById('inicio-ultimo-censo');
  if(el_censo){
- const ultimoCenso = censos.length ? censos[censos.length-1] : null;
+ const hojeStr = new Date().toISOString().slice(0,10);
+ const censosFiltrados = censos.filter(c=>c.data<=hojeStr);
+ const ultimoCenso = censosFiltrados.length ? censosFiltrados[censosFiltrados.length-1] : null;
  if(!ultimoCenso){ el_censo.innerHTML='<span style="color:var(--cinza);">Nenhum censo registrado ainda.</span>'; }
  else {
  const [a,m,d]=ultimoCenso.data.split('-');
