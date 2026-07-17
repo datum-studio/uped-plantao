@@ -120,6 +120,10 @@ input:disabled, select:disabled { background:var(--cinza-claro); color:var(--cin
 .sigla-N { background:#EDE9FE; color:#4C1D95; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
 .sigla-M { background:#DCFCE7; color:#166534; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
 .sigla-T { background:#FEE2E2; color:#991B1B; font-weight:700; font-size:0.75rem; padding:2px 5px; border-radius:3px; }
+.sigla-EVS { background:#FEF3C7; color:#92400E; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-EVF { background:#FDE68A; color:#78350F; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-EM { background:#DCFCE7; color:#166534; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
+.sigla-ET { background:#FEE2E2; color:#991B1B; font-weight:700; font-size:0.72rem; padding:2px 5px; border-radius:3px; }
 .td-total { font-weight:700; color:var(--azul); }
 .cat-secao-titulo { background:var(--cinza-claro); padding:9px 12px; font-size:0.78rem; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--cinza-borda); }
 
@@ -762,6 +766,22 @@ const TURNOS_PROF = [
   { v:'TARDE', l:'Tarde' }
 ];
 const SIGLAS = { DIURNO:'D', NOTURNO:'N', MANHA:'M', TARDE:'T' };
+
+// Retorna sigla e peso para evolução conforme dia da semana
+function siglaEvolucao(data) {
+  const dow = new Date(data+'T12:00:00').getDay(); // 0=Dom, 6=Sáb
+  return (dow===0||dow===6) ? {sigla:'EVF', peso:0.5} : {sigla:'EVS', peso:0.3};
+}
+// Peso de cada sigla na tabela
+function pesoSigla(sigla, catId, data) {
+  if(catId==='evolucao') return siglaEvolucao(data).peso;
+  if(catId==='p3') return 0.5; // EM ou ET
+  return 1; // todas as demais
+}
+// Formata total: inteiro se sem decimal, .1 se necessário
+function fmtTotal(v) {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.0','');
+}
 const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const CATS = [
  { id:'recepcao', icon:'', label:'Recepção' },
@@ -1398,28 +1418,35 @@ window.renderTabelaCat=function(){
  ${nomes.map(nome=>{
  let total=0;
  const cels=datas.map(data=>{
- const plantoesNoDia=lista.filter(r=>r.data===data);
- let siglas=[];
- plantoesNoDia.forEach(r=>{
- if(cat.id==='p3'){
- if(r.equipe?.p3?.manha?.nome===nome) siglas.push('M');
- if(r.equipe?.p3?.tarde?.nome===nome) siglas.push('T');
- } else {
- (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
- }
- });
- if(cat.id==='p3'){
- // P3: deduplica M+M → M e T+T → T (mesmo médico informado duas vezes)
- siglas=[...new Set(siglas)];
- }
- if(siglas.length){
- // Total = número de siglas distintas (D+N = 2 plantões distintos)
- total+=siglas.length;
- return `<td>${siglas.map(s=>`<span class="sigla-${s}">${s}</span>`).join(' ')}</td>`;
- }
- return '<td style="color:var(--cinza-borda);">—</td>';
+   const plantoesNoDia=lista.filter(r=>r.data===data);
+   let itens=[]; // {sigla, peso}
+   plantoesNoDia.forEach(r=>{
+     if(cat.id==='p3'){
+       if(r.equipe?.p3?.manha?.nome===nome) itens.push({sigla:'EM',peso:0.5});
+       if(r.equipe?.p3?.tarde?.nome===nome) itens.push({sigla:'ET',peso:0.5});
+     } else if(cat.id==='evolucao'){
+       (r.equipe?.evolucao||[]).forEach(p=>{
+         if(p.nome===nome){
+           const ev=siglaEvolucao(data);
+           itens.push({sigla:ev.sigla, peso:ev.peso});
+         }
+       });
+     } else {
+       (r.equipe?.[cat.id]||[]).forEach(p=>{
+         if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0], peso:1});
+       });
+     }
+   });
+   if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EM+EM ou ET+ET
+   if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i); // deduplica EVS+EVS etc
+   if(itens.length){
+     const peso=itens.reduce((s,x)=>s+x.peso,0);
+     total=Math.round((total+peso)*10)/10;
+     return `<td>${itens.map(x=>`<span class="sigla-${x.sigla}">${x.sigla}</span>`).join(' ')}</td>`;
+   }
+   return '<td style="color:var(--cinza-borda);">—</td>';
  }).join('');
- return `<tr><td class="td-nome" title="${nome}">${abr(nome)}</td>${cels}<td class="td-total">${total}</td></tr>`;
+ return `<tr><td class="td-nome" title="${nome}">${abr(nome)}</td>${cels}<td class="td-total">${fmtTotal(total)}</td></tr>`;
  }).join('')}
  </tbody>
  </table></div>
@@ -1446,19 +1473,34 @@ window.exportarCatCSV=function(){
  csv+=`\n${cat.label.toUpperCase()}\n`;
  csv+=['Profissional',...datas.map(d=>fmtData(d)),'Total'].join(';')+'\n';
  nomes.forEach(nome=>{
- let total=0;
- const linha=[nome];
- datas.forEach(data=>{
- const plantoesNoDia=lista.filter(r=>r.data===data);
- let siglas=[];
- plantoesNoDia.forEach(r=>{
- if(cat.id==='p3'){ if(r.equipe?.p3?.manha?.nome===nome) siglas.push('M'); if(r.equipe?.p3?.tarde?.nome===nome) siglas.push('T'); }
- else (r.equipe?.[cat.id]||[]).forEach(p=>{ if(p.nome===nome) siglas.push(SIGLAS[p.turno]||p.turno[0]); });
- });
- if(cat.id==='p3') siglas=[...new Set(siglas)]; // deduplica M+M ou T+T
- if(siglas.length){ total+=siglas.length; linha.push(siglas.join('+')); } else linha.push('');
- });
- linha.push(total); csv+=linha.join(';')+'\n';
+   let total=0;
+   const linha=[nome];
+   datas.forEach(data=>{
+     const plantoesNoDia=lista.filter(r=>r.data===data);
+     let itens=[];
+     plantoesNoDia.forEach(r=>{
+       if(cat.id==='p3'){
+         if(r.equipe?.p3?.manha?.nome===nome) itens.push({sigla:'EM',peso:0.5});
+         if(r.equipe?.p3?.tarde?.nome===nome) itens.push({sigla:'ET',peso:0.5});
+       } else if(cat.id==='evolucao'){
+         (r.equipe?.evolucao||[]).forEach(p=>{
+           if(p.nome===nome){ const ev=siglaEvolucao(data); itens.push({sigla:ev.sigla,peso:ev.peso}); }
+         });
+       } else {
+         (r.equipe?.[cat.id]||[]).forEach(p=>{
+           if(p.nome===nome) itens.push({sigla:SIGLAS[p.turno]||p.turno[0],peso:1});
+         });
+       }
+     });
+     if(cat.id==='p3') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
+     if(cat.id==='evolucao') itens=itens.filter((v,i,a)=>a.findIndex(x=>x.sigla===v.sigla)===i);
+     if(itens.length){
+       const peso=itens.reduce((s,x)=>s+x.peso,0);
+       total=Math.round((total+peso)*10)/10;
+       linha.push(itens.map(x=>x.sigla).join('+'));
+     } else linha.push('');
+   });
+   linha.push(fmtTotal(total)); csv+=linha.join(';')+'\n';
  });
  });
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
